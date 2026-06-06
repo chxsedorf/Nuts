@@ -678,7 +678,7 @@ export default function Page() {
           </div>
         </section>
 
-        <footer className="flex h-[48px] shrink-0 items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 backdrop-blur-xl">
+        <footer className="flex h-[48px] shrink-0 items-center justify-start gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 backdrop-blur-xl">
           <button
             onClick={() => {
               setSettingsTab("rules");
@@ -690,13 +690,6 @@ export default function Page() {
             Settings
           </button>
 
-
-          <button
-            onClick={resetGame}
-            className="h-9 rounded-xl bg-[#F5F1E8] px-3 text-[10px] font-black uppercase tracking-[0.18em] text-black"
-          >
-            Restart
-          </button>
         </footer>
       </div>
 
@@ -762,17 +755,6 @@ export default function Page() {
               </p>
             </div>
           </div>
-
-          <button
-            onClick={resetGame}
-            className={[
-              "mt-10 w-full rounded-2xl border border-white/10",
-              "bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black",
-              "transition hover:scale-[1.015] hover:bg-white active:scale-[0.99]",
-            ].join(" ")}
-          >
-            Restart
-          </button>
         </aside>
 
         <section
@@ -894,10 +876,13 @@ export default function Page() {
             ) : null}
 
             <button
-              onClick={resetGame}
-              className="mt-6 w-full rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black transition hover:bg-white active:scale-[0.99]"
+              onClick={() => {
+                setSettingsTab("rules");
+                setIsSettingsOpen(true);
+              }}
+              className="mt-6 w-full select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/70 transition hover:bg-white/[0.07] active:scale-[0.99]"
             >
-              Restart
+              ⚙ Settings
             </button>
           </div>
         </div>
