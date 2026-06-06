@@ -577,102 +577,52 @@ export default function Page() {
 
       {screen === "home" ? (
         <div
-          className="relative flex h-[100dvh] items-center justify-center px-5 lg:h-[calc(100svh-24px)]"
+          className="relative flex h-[100dvh] items-center justify-center px-5"
           style={{
             paddingTop: "max(18px, calc(env(safe-area-inset-top) + 16px))",
             paddingBottom: "max(12px, calc(env(safe-area-inset-bottom) + 12px))",
           }}
         >
-          <section className="flex w-full max-w-[980px] flex-col items-center rounded-[34px] border border-white/10 bg-white/[0.035] px-6 py-8 text-center shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:px-10 lg:grid lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-10 lg:px-12 lg:py-12 lg:text-left">
-            <div className="flex flex-col items-center lg:items-start">
-              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[30px] border border-white/10 bg-black/30 shadow-[0_18px_55px_rgba(0,0,0,0.35)] sm:h-32 sm:w-32">
-                <img
-                  src="/icon-512.png"
-                  alt="NUTS icon"
-                  className="h-full w-full object-cover"
-                  draggable={false}
-                />
-              </div>
-
-              <h1 className="mt-8 text-6xl font-black tracking-[-0.1em] text-[#F5F1E8] sm:text-7xl">
-                NUTS
-              </h1>
-
-              <div className="mt-8 grid w-full max-w-[360px] grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                    Best
-                  </p>
-                  <p className="mt-2 text-3xl font-black tracking-[-0.06em] text-[#F5F1E8]">
-                    {highScore}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                    Mode
-                  </p>
-                  <p className="mt-2 text-3xl font-black tracking-[-0.06em] text-[#D6B36A]">
-                    ENDLESS
-                  </p>
-                </div>
-              </div>
+          <section className="flex w-full max-w-[430px] flex-col items-center rounded-[34px] border border-white/10 bg-white/[0.035] px-6 py-9 text-center shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:px-10">
+            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[30px] border border-white/10 bg-black/30 shadow-[0_18px_55px_rgba(0,0,0,0.35)] sm:h-32 sm:w-32">
+              <img
+                src="/icon-512.png"
+                alt="NUTS icon"
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
             </div>
 
-            <div className="mt-9 w-full lg:mt-0">
-              <div className="rounded-[28px] border border-white/10 bg-black/20 p-4 sm:p-5">
-                <div className="grid grid-cols-5 gap-2">
-                  {Array.from({ length: 25 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className={[
-                        "aspect-square rounded-xl border border-white/[0.075] bg-white/[0.04]",
-                        index === 7 || index === 12 || index === 17
-                          ? "border-[#D6B36A]/35 bg-[#D6B36A]/[0.05]"
-                          : "",
-                      ].join(" ")}
-                    />
-                  ))}
-                </div>
-              </div>
+            <h1 className="mt-8 text-6xl font-black tracking-[-0.1em] text-[#F5F1E8] sm:text-7xl">
+              NUTS
+            </h1>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <button
-                  onClick={resetGame}
-                  className="select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.24em] text-black transition hover:bg-white active:scale-[0.99]"
-                >
-                  Start Run
-                </button>
+            <div className="mt-8 w-full rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                Best Score
+              </p>
+              <p className="mt-2 text-4xl font-black tracking-[-0.06em] text-[#F5F1E8]">
+                {highScore}
+              </p>
+            </div>
 
-                <button
-                  onClick={() => {
-                    setSettingsTab("rules");
-                    setIsSettingsOpen(true);
-                  }}
-                  className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/70 transition hover:bg-white/[0.075] active:scale-[0.99]"
-                >
-                  ⚙ Settings
-                </button>
-              </div>
+            <div className="mt-5 grid w-full gap-3">
+              <button
+                onClick={resetGame}
+                className="select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.24em] text-black transition hover:bg-white active:scale-[0.99]"
+              >
+                Play
+              </button>
 
-              <div className="mt-5 grid gap-3 text-left sm:grid-cols-3">
-                {[
-                  ["Pair", "Scores and stays"],
-                  ["Clear", "Three or stronger"],
-                  ["Combo", "Keep within 3 turns"],
-                ].map(([title, body]) => (
-                  <div
-                    key={title}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
-                  >
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#D6B36A]">
-                      {title}
-                    </p>
-                    <p className="mt-2 text-xs leading-5 text-white/42">
-                      {body}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={() => {
+                  setSettingsTab("rules");
+                  setIsSettingsOpen(true);
+                }}
+                className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/70 transition hover:bg-white/[0.075] active:scale-[0.99]"
+              >
+                ⚙ Settings
+              </button>
             </div>
           </section>
         </div>
