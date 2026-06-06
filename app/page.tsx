@@ -263,7 +263,7 @@ export default function Page() {
   const [lastHands, setLastHands] = useState<HandResult[]>([]);
   const [message, setMessage] = useState("No hand.");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<"rules" | "privacy">("rules");
+  const [settingsTab, setSettingsTab] = useState<"rules" | "hands" | "combo" | "sfx" | "privacy">("rules");
 
   useEffect(() => {
     const newDeck = shuffle(createDeck());
@@ -724,8 +724,8 @@ export default function Page() {
 
       {isSettingsOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-[560px] rounded-[28px] border border-white/10 bg-[#121212] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.5)]">
-            <div className="flex items-center justify-between gap-4">
+          <div className="flex max-h-[92svh] w-full max-w-[620px] flex-col rounded-[28px] border border-white/10 bg-[#121212] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.5)]">
+            <div className="flex shrink-0 items-center justify-between gap-4">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#D6B36A]">
                   Settings
@@ -744,84 +744,176 @@ export default function Page() {
               </button>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-1">
-              <button
-                onClick={() => setSettingsTab("rules")}
-                className={[
-                  "rounded-xl px-3 py-3 text-xs font-black uppercase tracking-[0.18em] transition",
-                  settingsTab === "rules"
-                    ? "bg-[#F5F1E8] text-black"
-                    : "text-white/45 hover:bg-white/[0.05] hover:text-white/75",
-                ].join(" ")}
-              >
-                ルール説明
-              </button>
-
-              <button
-                onClick={() => setSettingsTab("privacy")}
-                className={[
-                  "rounded-xl px-3 py-3 text-xs font-black uppercase tracking-[0.18em] transition",
-                  settingsTab === "privacy"
-                    ? "bg-[#F5F1E8] text-black"
-                    : "text-white/45 hover:bg-white/[0.05] hover:text-white/75",
-                ].join(" ")}
-              >
-                プライバシー
-              </button>
+            <div className="mt-6 grid shrink-0 grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-1 sm:grid-cols-5">
+              {[
+                { key: "rules", label: "Rules" },
+                { key: "hands", label: "Hands" },
+                { key: "combo", label: "Combo" },
+                { key: "sfx", label: "SFX" },
+                { key: "privacy", label: "Privacy" },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() =>
+                    setSettingsTab(
+                      item.key as "rules" | "hands" | "combo" | "sfx" | "privacy"
+                    )
+                  }
+                  className={[
+                    "rounded-xl px-2 py-3 text-[10px] font-black uppercase tracking-[0.14em] transition sm:text-xs",
+                    settingsTab === item.key
+                      ? "bg-[#F5F1E8] text-black"
+                      : "text-white/45 hover:bg-white/[0.05] hover:text-white/75",
+                  ].join(" ")}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
 
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
-                    SFX Volume
-                  </p>
-                  <p className="mt-1 text-sm text-white/55">
-                    効果音の音量を調整します。0にすると無音になります。
-                  </p>
-                </div>
-                <p className="min-w-12 text-right text-sm font-black text-[#D6B36A]">
-                  {Math.round(sound.volume * 100)}%
-                </p>
-              </div>
-
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={sound.volume}
-                onChange={(event) =>
-                  sound.setVolume(Number(event.currentTarget.value))
-                }
-                className="mt-4 w-full accent-[#D6B36A]"
-                aria-label="SFX volume"
-              />
-            </div>
-
-            <div className="mt-5 max-h-[55vh] overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-5">
+            <div className="mt-5 min-h-0 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-5">
               {settingsTab === "rules" ? (
                 <div className="space-y-4 text-sm leading-7 text-white/62">
                   <h3 className="text-xl font-black text-[#F5F1E8]">
-                    ルール説明
+                    Rules
                   </h3>
                   <p>
-                    5×5のボードにカードを置き、縦または横に隣り合ったカードでポーカー役を作ります。斜め方向は判定しません。
+                    5×5のボードにカードを置き、縦または横に隣り合ったカードで役を作ります。斜め方向は判定しません。
                   </p>
                   <p>
                     空白を挟んだカードはつながっていないため、役として成立しません。実プレイでは、今回置いたカードを含む役だけがスコア・コンボ・演出の対象になります。
                   </p>
                   <p>
-                    One Pairはスコアとコンボ対象ですが消えません。Three Card、Straight、Full HouseなどOne Pairより強い役は成立後に消えます。デッキが尽きると自動で新しい山札に切り替わります。
+                    One Pairはスコアとコンボ対象ですが消えません。Three Card以上の役は成立後に消えます。
                   </p>
                   <p>
-                    Straightは3枚以上で成立します。A-2-3、3-2-A、Q-K-A、A-K-QもStraightとして扱います。
+                    デッキが尽きると自動で新しい52枚デッキに切り替わります。置けるマスがなくなるとラン終了です。
                   </p>
                 </div>
-              ) : (
+              ) : null}
+
+              {settingsTab === "hands" ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-xl font-black text-[#F5F1E8]">
+                      Hands & Scores
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-white/50">
+                      強い役ほど高得点です。One Pairだけは消えず、それ以外は静かに消えます。
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {[
+                      ["Royal Straight Flush", "1000", "Clear"],
+                      ["Straight Flush", "700", "Clear"],
+                      ["Four Card", "500", "Clear"],
+                      ["Full House", "350", "Clear"],
+                      ["Flush", "250", "Clear"],
+                      ["Straight", "180", "Clear"],
+                      ["Three Card", "120", "Clear"],
+                      ["Two Pair", "80", "Clear"],
+                      ["One Pair", "30", "Keep"],
+                    ].map(([name, points, behavior]) => (
+                      <div
+                        key={name}
+                        className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3"
+                      >
+                        <p className="text-sm font-bold text-white/72">{name}</p>
+                        <p className="text-sm font-black text-[#D6B36A]">
+                          {points}
+                        </p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+                          {behavior}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-7 text-white/52">
+                    <p>
+                      Straightは3枚以上で成立します。A-2-3、3-2-A、Q-K-A、A-K-QもStraightとして扱います。
+                    </p>
+                    <p className="mt-2">
+                      Full HouseはAAA22または22AAAの形だけ成立します。QQ88Qのようにバラけた並びはFull Houseではありません。
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {settingsTab === "combo" ? (
                 <div className="space-y-4 text-sm leading-7 text-white/62">
                   <h3 className="text-xl font-black text-[#F5F1E8]">
-                    プライバシーポリシー
+                    Combo
+                  </h3>
+                  <p>
+                    役を作るとコンボが増えます。One Pairもコンボ対象です。
+                  </p>
+                  <p>
+                    役成立から3ターン以内に次の役を作るとコンボが継続します。4ターン以上空くとコンボはリセットされます。
+                  </p>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                      Score Formula
+                    </p>
+                    <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[#D6B36A]">
+                      Hand Score × Combo
+                    </p>
+                    <p className="mt-3 text-white/48">
+                      例：Straight 180点をx3で成立させると、540点入ります。
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {settingsTab === "sfx" ? (
+                <div className="space-y-5">
+                  <div>
+                    <h3 className="text-xl font-black text-[#F5F1E8]">
+                      SFX Volume
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-white/50">
+                      Offsuit風の静かな効果音です。0%にすると無音になります。
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
+                        Volume
+                      </p>
+                      <p className="min-w-12 text-right text-sm font-black text-[#D6B36A]">
+                        {Math.round(sound.volume * 100)}%
+                      </p>
+                    </div>
+
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={sound.volume}
+                      onChange={(event) =>
+                        sound.setVolume(Number(event.currentTarget.value))
+                      }
+                      className="mt-5 w-full accent-[#D6B36A]"
+                      aria-label="SFX volume"
+                    />
+
+                    <button
+                      onClick={() => sound.play("place")}
+                      className="mt-5 w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white/65 transition hover:bg-white/[0.075]"
+                    >
+                      Test Sound
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {settingsTab === "privacy" ? (
+                <div className="space-y-4 text-sm leading-7 text-white/62">
+                  <h3 className="text-xl font-black text-[#F5F1E8]">
+                    Privacy Policy
                   </h3>
                   <p>
                     NUTSは、ゲームプレイに必要な範囲を超えて個人情報を収集しません。
@@ -830,10 +922,13 @@ export default function Page() {
                     現在のバージョンでは、入力フォーム、アカウント作成、位置情報取得、決済機能はありません。
                   </p>
                   <p>
+                    ハイスコアと効果音の音量設定は、お使いのブラウザ内のlocalStorageに保存されます。外部サーバーには送信されません。
+                  </p>
+                  <p>
                     今後アクセス解析や広告を導入する場合は、必要な情報をこの画面または公開ページ上で明示します。
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
