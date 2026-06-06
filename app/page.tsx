@@ -594,15 +594,9 @@ export default function Page() {
                 />
               </div>
 
-              <p className="mt-8 text-[10px] font-black uppercase tracking-[0.42em] text-[#D6B36A]">
-                Poker Grid
-              </p>
-              <h1 className="mt-3 text-6xl font-black tracking-[-0.1em] text-[#F5F1E8] sm:text-7xl">
+              <h1 className="mt-8 text-6xl font-black tracking-[-0.1em] text-[#F5F1E8] sm:text-7xl">
                 NUTS
               </h1>
-              <p className="mt-4 max-w-[360px] text-sm leading-7 text-white/45">
-                Build connected poker hands on a silent 5×5 board. Pair stays. Stronger hands clear. Chase the quiet high score.
-              </p>
 
               <div className="mt-8 grid w-full max-w-[360px] grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
@@ -808,15 +802,9 @@ export default function Page() {
       <div className="relative mx-auto hidden h-[calc(100svh-24px)] w-full max-w-none grid-cols-[280px_minmax(760px,1fr)_300px] gap-3 lg:grid">
         <aside className="rounded-[30px] border border-white/10 bg-white/[0.035] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur-xl">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.38em] text-[#D6B36A]">
-              Poker Grid
-            </p>
-            <h1 className="mt-3 text-5xl font-black tracking-[-0.08em] text-[#F5F1E8]">
+            <h1 className="text-5xl font-black tracking-[-0.08em] text-[#F5F1E8]">
               NUTS
             </h1>
-            <p className="mt-3 text-sm leading-6 text-white/42">
-              Build connected hands across a silent 5×5 table.
-            </p>
           </div>
 
           <div className="mt-10 space-y-5">
@@ -936,15 +924,6 @@ export default function Page() {
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="mt-8 border-t border-white/10 pt-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/35">
-              Status
-            </p>
-            <p className="mt-3 text-xl font-black tracking-[-0.04em] text-[#F5F1E8]">
-              {message}
-            </p>
           </div>
 
           <button
