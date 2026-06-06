@@ -175,6 +175,8 @@ export default function Page() {
   const [turnsSinceHand, setTurnsSinceHand] = useState(0);
   const [lastHands, setLastHands] = useState<HandResult[]>([]);
   const [message, setMessage] = useState("No hand.");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"rules" | "privacy">("rules");
 
   useEffect(() => {
     const newDeck = shuffle(createDeck());
@@ -356,14 +358,21 @@ export default function Page() {
           </div>
         </section>
 
-        <footer className="flex h-[48px] shrink-0 items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 backdrop-blur-xl">
-          <p className="truncate text-sm font-bold text-[#F5F1E8]">
-            {message}
-          </p>
+        <footer className="flex h-[48px] shrink-0 items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 backdrop-blur-xl">
+          <button
+            onClick={() => {
+              setSettingsTab("rules");
+              setIsSettingsOpen(true);
+            }}
+            className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#F5F1E8]"
+          >
+            <span className="text-sm">⚙</span>
+            Settings
+          </button>
 
           <button
             onClick={resetGame}
-            className="ml-3 rounded-xl bg-[#F5F1E8] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-black"
+            className="h-9 rounded-xl bg-[#F5F1E8] px-3 text-[10px] font-black uppercase tracking-[0.18em] text-black"
           >
             Restart
           </button>
@@ -487,47 +496,117 @@ export default function Page() {
 
           <div className="mt-8 border-t border-white/10 pt-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/35">
-              Last Hand
+              Status
             </p>
-            <p className="mt-3 text-2xl font-black tracking-[-0.04em] text-[#F5F1E8]">
+            <p className="mt-3 text-xl font-black tracking-[-0.04em] text-[#F5F1E8]">
               {message}
             </p>
           </div>
 
-          <div className="mt-6 space-y-3">
-            {lastHands.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-sm leading-6 text-white/38">
-                  Pair scores and stays. All stronger hands score and clear.
-                </p>
-              </div>
-            ) : (
-              lastHands.map((hand, index) => (
-                <div
-                  key={`${hand.type}-${index}`}
-                  className="rounded-2xl border border-white/10 bg-white/[0.045] p-4"
-                >
-                  <p className="text-sm font-black text-[#D6B36A]">
-                    {handName(hand.type)}
-                  </p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.16em] text-white/35">
-                    +{hand.score} / {hand.shouldClear ? "Clear" : "Keep"}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="mt-8 border-t border-white/10 pt-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/35">
-              Rule
-            </p>
-            <p className="mt-3 text-sm leading-6 text-white/42">
-              Rows and columns only. Empty spaces break every hand.
-            </p>
-          </div>
+          <button
+            onClick={() => {
+              setSettingsTab("rules");
+              setIsSettingsOpen(true);
+            }}
+            className={[
+              "mt-8 flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10",
+              "bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-[#F5F1E8]",
+              "transition hover:bg-white/[0.075] active:scale-[0.99]",
+            ].join(" ")}
+          >
+            <span className="text-lg">⚙</span>
+            Settings
+          </button>
         </aside>
       </div>
+
+      {isSettingsOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-[560px] rounded-[28px] border border-white/10 bg-[#121212] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.5)]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#D6B36A]">
+                  Settings
+                </p>
+                <h2 className="mt-2 text-3xl font-black tracking-[-0.06em] text-[#F5F1E8]">
+                  NUTS
+                </h2>
+              </div>
+
+              <button
+                onClick={() => setIsSettingsOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.045] text-xl font-black text-white/70 transition hover:bg-white/[0.08]"
+                aria-label="Close settings"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-1">
+              <button
+                onClick={() => setSettingsTab("rules")}
+                className={[
+                  "rounded-xl px-3 py-3 text-xs font-black uppercase tracking-[0.18em] transition",
+                  settingsTab === "rules"
+                    ? "bg-[#F5F1E8] text-black"
+                    : "text-white/45 hover:bg-white/[0.05] hover:text-white/75",
+                ].join(" ")}
+              >
+                ルール説明
+              </button>
+
+              <button
+                onClick={() => setSettingsTab("privacy")}
+                className={[
+                  "rounded-xl px-3 py-3 text-xs font-black uppercase tracking-[0.18em] transition",
+                  settingsTab === "privacy"
+                    ? "bg-[#F5F1E8] text-black"
+                    : "text-white/45 hover:bg-white/[0.05] hover:text-white/75",
+                ].join(" ")}
+              >
+                プライバシー
+              </button>
+            </div>
+
+            <div className="mt-5 max-h-[55vh] overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-5">
+              {settingsTab === "rules" ? (
+                <div className="space-y-4 text-sm leading-7 text-white/62">
+                  <h3 className="text-xl font-black text-[#F5F1E8]">
+                    ルール説明
+                  </h3>
+                  <p>
+                    5×5のボードにカードを置き、縦または横に隣り合ったカードでポーカー役を作ります。斜め方向は判定しません。
+                  </p>
+                  <p>
+                    空白を挟んだカードはつながっていないため、役として成立しません。実プレイでは、今回置いたカードを含む役だけがスコア・コンボ・演出の対象になります。
+                  </p>
+                  <p>
+                    One Pairはスコアとコンボ対象ですが消えません。Three Card、Straight、Full HouseなどOne Pairより強い役は成立後に消えます。
+                  </p>
+                  <p>
+                    Straightは3枚以上で成立します。A-2-3、3-2-A、Q-K-A、A-K-QもStraightとして扱います。
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4 text-sm leading-7 text-white/62">
+                  <h3 className="text-xl font-black text-[#F5F1E8]">
+                    プライバシーポリシー
+                  </h3>
+                  <p>
+                    NUTSは、ゲームプレイに必要な範囲を超えて個人情報を収集しません。
+                  </p>
+                  <p>
+                    現在のバージョンでは、入力フォーム、アカウント作成、位置情報取得、決済機能はありません。
+                  </p>
+                  <p>
+                    今後アクセス解析や広告を導入する場合は、必要な情報をこの画面または公開ページ上で明示します。
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
