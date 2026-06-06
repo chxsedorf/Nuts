@@ -1205,12 +1205,22 @@ export default function Page() {
               ) : null}
             </div>
 
-            <div className="mt-4 grid shrink-0 grid-cols-2 gap-3 border-t border-white/10 pt-4">
+            <div className="mt-4 grid shrink-0 grid-cols-3 gap-3 border-t border-white/10 pt-4">
               <button
                 onClick={() => setIsSettingsOpen(false)}
-                className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-xs font-black uppercase tracking-[0.2em] text-white/62 transition hover:bg-white/[0.07] active:scale-[0.99]"
+                className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-4 text-xs font-black uppercase tracking-[0.16em] text-white/62 transition hover:bg-white/[0.07] active:scale-[0.99]"
               >
                 Close
+              </button>
+
+              <button
+                onClick={() => {
+                  setScreen("home");
+                  setIsSettingsOpen(false);
+                }}
+                className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-4 text-xs font-black uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/[0.07] active:scale-[0.99]"
+              >
+                Home
               </button>
 
               <button
@@ -1218,7 +1228,7 @@ export default function Page() {
                   resetGame();
                   setIsSettingsOpen(false);
                 }}
-                className="select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-4 py-4 text-xs font-black uppercase tracking-[0.2em] text-black transition hover:bg-white active:scale-[0.99]"
+                className="select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-3 py-4 text-xs font-black uppercase tracking-[0.16em] text-black transition hover:bg-white active:scale-[0.99]"
               >
                 Restart
               </button>
