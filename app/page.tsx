@@ -729,13 +729,13 @@ export default function Page() {
               Best Score {highScore}
             </p>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <p className="text-sm leading-6 text-white/50">
-                {isNewBest
-                  ? "最高スコアを更新しました。もう一度走って、さらに上を狙いましょう。"
-                  : "置けるマスがなくなりました。ハイスコアを更新できるよう、もう一度挑戦しましょう。"}
-              </p>
-            </div>
+            {isNewBest ? (
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                <p className="text-sm leading-6 text-white/50">
+                  最高スコアを更新しました。もう一度走って、さらに上を狙いましょう。
+                </p>
+              </div>
+            ) : null}
 
             <button
               onClick={resetGame}
