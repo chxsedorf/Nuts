@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Board, Card, HandResult, Rank, Suit } from "../types/game";
+import type { Board, Card, HandResult, HandType, Rank, Suit } from "../types/game";
 import { judgeHandsAfterPlace } from "../lib/handJudge";
 
 const SUITS: Suit[] = ["spade", "heart", "diamond", "club"];
@@ -79,6 +79,22 @@ function hasEmptyCell(board: Board): boolean {
 }
 
 const HIGH_SCORE_KEY = "nuts-high-score";
+
+const BALANCED_SCORE_TABLE: Record<HandType, number> = {
+  ROYAL_STRAIGHT_FLUSH: 1200,
+  STRAIGHT_FLUSH: 800,
+  FOUR_CARD: 500,
+  FULL_HOUSE: 320,
+  FLUSH: 260,
+  STRAIGHT: 160,
+  THREE_CARD: 120,
+  TWO_PAIR: 80,
+  ONE_PAIR: 20,
+};
+
+function getBalancedScore(type: HandType): number {
+  return BALANCED_SCORE_TABLE[type];
+}
 
 function handName(type: string): string {
   switch (type) {
@@ -353,7 +369,7 @@ export default function Page() {
 
     for (const hand of hands) {
       const comboMultiplier = Math.max(1, nextCombo);
-      gainedScore += hand.score * comboMultiplier;
+      gainedScore += getBalancedScore(hand.type) * comboMultiplier;
     }
 
     for (const hand of hands) {
@@ -387,22 +403,21 @@ export default function Page() {
     setTurnsSinceHand(nextTurnsSinceHand);
     setLastHands(hands);
 
+    if (finalScore > highScore) {
+      setHighScore(finalScore);
+      setIsNewBest(true);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(HIGH_SCORE_KEY, String(finalScore));
+      }
+    }
+
     if (shouldEndGame) {
       setIsGameOver(true);
       setMessage("Game Over");
 
-      setHighScore((prev) => {
-        if (finalScore > prev) {
-          setIsNewBest(true);
-          if (typeof window !== "undefined") {
-            window.localStorage.setItem(HIGH_SCORE_KEY, String(finalScore));
-          }
-          return finalScore;
-        }
-
+      if (finalScore <= highScore) {
         setIsNewBest(false);
-        return prev;
-      });
+      }
     }
 
     if (hands.length > 0) {
@@ -451,6 +466,11 @@ export default function Page() {
             <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
               Best {highScore}
             </p>
+            {isNewBest ? (
+              <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-[#D6B36A]">
+                New Best
+              </p>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-3">
@@ -571,6 +591,11 @@ export default function Page() {
               <p className="mt-2 text-4xl font-black tracking-[-0.06em] text-white/70">
                 {highScore}
               </p>
+              {isNewBest ? (
+                <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#D6B36A]">
+                  New Best
+                </p>
+              ) : null}
             </div>
 
             <div className="border-t border-white/10 pt-5">
@@ -805,15 +830,15 @@ export default function Page() {
 
                   <div className="space-y-2">
                     {[
-                      ["Royal Straight Flush", "1000", "Clear"],
-                      ["Straight Flush", "700", "Clear"],
+                      ["Royal Straight Flush", "1200", "Clear"],
+                      ["Straight Flush", "800", "Clear"],
                       ["Four Card", "500", "Clear"],
-                      ["Full House", "350", "Clear"],
-                      ["Flush", "250", "Clear"],
-                      ["Straight", "180", "Clear"],
+                      ["Full House", "320", "Clear"],
+                      ["Flush", "260", "Clear"],
+                      ["Straight", "160", "Clear"],
                       ["Three Card", "120", "Clear"],
                       ["Two Pair", "80", "Clear"],
-                      ["One Pair", "30", "Keep"],
+                      ["One Pair", "20", "Keep"],
                     ].map(([name, points, behavior]) => (
                       <div
                         key={name}
