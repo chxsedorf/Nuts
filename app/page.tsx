@@ -274,8 +274,8 @@ function CardView({
   return (
     <div
       className={[
-        "flex h-full w-full items-start justify-center overflow-hidden rounded-[18px]",
-        "bg-transparent",
+        "flex h-full w-full overflow-hidden rounded-[18px] bg-transparent",
+        large ? "items-center justify-center" : "items-start justify-center",
       ].join(" ")}
     >
       <img
@@ -286,7 +286,7 @@ function CardView({
           "select-none [-webkit-user-drag:none]",
           large
             ? "h-full w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.34)]"
-            : "h-[150%] w-[112%] max-w-none object-cover object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
+            : "h-[158%] w-[118%] max-w-none object-cover object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
         ].join(" ")}
       />
     </div>
@@ -703,7 +703,7 @@ export default function Page() {
                     ].join(" ")}
                   >
                     {cell ? (
-                      <div className="absolute inset-1">
+                      <div className="absolute inset-[2px]">
                         <CardView card={cell} />
                       </div>
                     ) : (
@@ -827,7 +827,7 @@ export default function Page() {
                     <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100 bg-[radial-gradient(circle_at_top,#ffffff18,transparent_60%)]" />
 
                     {cell ? (
-                      <div className="absolute inset-1.5">
+                      <div className="absolute inset-[3px]">
                         <CardView card={cell} />
                       </div>
                     ) : (
