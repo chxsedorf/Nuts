@@ -101,10 +101,10 @@ function handName(type: string): string {
 
 
 function useQuietSound() {
-  const [enabled, setEnabled] = useState(true);
+  const [volume, setVolume] = useState(0.45);
 
   function play(type: SoundType) {
-    if (!enabled) return;
+    if (volume <= 0) return;
     if (typeof window === "undefined") return;
 
     const AudioContextClass =
@@ -117,9 +117,15 @@ function useQuietSound() {
     const ctx = new AudioContextClass();
     const now = ctx.currentTime;
 
+    const safeVolume = Math.min(1, Math.max(0, volume));
+    const masterPeak = 0.026 * safeVolume;
+
     const master = ctx.createGain();
     master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(0.026, now + 0.012);
+    master.gain.exponentialRampToValueAtTime(
+      Math.max(0.0001, masterPeak),
+      now + 0.012
+    );
     master.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
     master.connect(ctx.destination);
 
@@ -140,9 +146,11 @@ function useQuietSound() {
       osc.type = "sine";
       osc.frequency.setValueAtTime(freq, start);
 
+      const notePeak = (type === "deny" ? 0.016 : 0.03) * safeVolume;
+
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(
-        type === "deny" ? 0.016 : 0.03,
+        Math.max(0.0001, notePeak),
         start + 0.012
       );
       gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.12);
@@ -160,8 +168,8 @@ function useQuietSound() {
   }
 
   return {
-    enabled,
-    setEnabled,
+    volume,
+    setVolume,
     play,
   };
 }
@@ -462,12 +470,6 @@ export default function Page() {
             Settings
           </button>
 
-          <button
-            onClick={() => sound.setEnabled((prev) => !prev)}
-            className="h-9 rounded-xl border border-white/10 bg-white/[0.045] px-3 text-[10px] font-black uppercase tracking-[0.14em] text-white/70"
-          >
-            {sound.enabled ? "Sound" : "Muted"}
-          </button>
 
           <button
             onClick={resetGame}
@@ -617,16 +619,6 @@ export default function Page() {
             Settings
           </button>
 
-          <button
-            onClick={() => sound.setEnabled((prev) => !prev)}
-            className={[
-              "mt-3 flex w-full items-center justify-center rounded-2xl border border-white/10",
-              "bg-white/[0.025] px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-white/55",
-              "transition hover:bg-white/[0.06] active:scale-[0.99]",
-            ].join(" ")}
-          >
-            {sound.enabled ? "Sound On" : "Sound Off"}
-          </button>
         </aside>
       </div>
 
@@ -676,6 +668,35 @@ export default function Page() {
               >
                 プライバシー
               </button>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
+                    SFX Volume
+                  </p>
+                  <p className="mt-1 text-sm text-white/55">
+                    効果音の音量を調整します。0にすると無音になります。
+                  </p>
+                </div>
+                <p className="min-w-12 text-right text-sm font-black text-[#D6B36A]">
+                  {Math.round(sound.volume * 100)}%
+                </p>
+              </div>
+
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={sound.volume}
+                onChange={(event) =>
+                  sound.setVolume(Number(event.currentTarget.value))
+                }
+                className="mt-4 w-full accent-[#D6B36A]"
+                aria-label="SFX volume"
+              />
             </div>
 
             <div className="mt-5 max-h-[55vh] overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-5">
