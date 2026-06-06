@@ -274,9 +274,8 @@ function CardView({
   return (
     <div
       className={[
-        "flex h-full w-full items-center justify-center overflow-hidden rounded-[18px]",
+        "flex h-full w-full items-start justify-center overflow-hidden rounded-[18px]",
         "bg-transparent",
-        large ? "p-0" : "p-0",
       ].join(" ")}
     >
       <img
@@ -284,9 +283,10 @@ function CardView({
         alt={`${card.rank} ${card.suit}`}
         draggable={false}
         className={[
-          "h-full w-full select-none object-contain",
-          "[-webkit-user-drag:none]",
-          large ? "drop-shadow-[0_18px_34px_rgba(0,0,0,0.34)]" : "drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
+          "select-none [-webkit-user-drag:none]",
+          large
+            ? "h-full w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.34)]"
+            : "h-[150%] w-[112%] max-w-none object-cover object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
         ].join(" ")}
       />
     </div>
