@@ -100,52 +100,40 @@ function handName(type: string): string {
 function CardView({
   card,
   large = false,
-  compact = false,
 }: {
   card: Card;
   large?: boolean;
-  compact?: boolean;
 }) {
   const red = isRedSuit(card.suit);
 
   return (
     <div
       className={[
-        "relative flex h-full w-full flex-col justify-between rounded-[18px]",
-        "border border-black/10 bg-[#F5F1E8] text-[#111111]",
-        "shadow-[0_18px_40px_rgba(0,0,0,0.24)]",
-        compact ? "p-1.5" : large ? "p-5" : "p-3",
+        "flex h-full w-full flex-col items-center justify-center rounded-[18px]",
+        "border border-black/10 bg-[#F5F1E8]",
+        "shadow-[0_8px_22px_rgba(0,0,0,0.14)]",
+        large ? "gap-4 p-5" : "gap-2 p-3",
       ].join(" ")}
     >
-      <div
+      <span
         className={[
           "font-black leading-none tracking-tight",
           red ? "text-[#9F3F3F]" : "text-[#111111]",
-          compact ? "text-[13px]" : large ? "text-4xl" : "text-xl",
+          large ? "text-5xl" : "text-2xl",
         ].join(" ")}
       >
         {card.rank}
-      </div>
+      </span>
 
-      <div
+      <span
         className={[
-          "self-center font-black leading-none",
+          "font-black leading-none",
           red ? "text-[#9F3F3F]" : "text-[#111111]",
-          compact ? "text-xl" : large ? "text-6xl" : "text-3xl",
+          large ? "text-6xl" : "text-3xl",
         ].join(" ")}
       >
         {suitSymbol(card.suit)}
-      </div>
-
-      <div
-        className={[
-          "rotate-180 self-end font-black leading-none tracking-tight",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-          compact ? "text-[13px]" : large ? "text-4xl" : "text-xl",
-        ].join(" ")}
-      >
-        {card.rank}
-      </div>
+      </span>
     </div>
   );
 }
@@ -154,18 +142,19 @@ function MiniCardView({ card }: { card: Card }) {
   const red = isRedSuit(card.suit);
 
   return (
-    <div className="flex h-16 w-12 flex-col items-center justify-center rounded-xl border border-black/10 bg-[#F5F1E8] text-black shadow-lg">
+    <div className="flex h-16 w-12 flex-col items-center justify-center gap-1 rounded-xl border border-black/10 bg-[#F5F1E8] shadow-lg">
       <span
         className={[
-          "text-lg font-black leading-none",
+          "text-base font-black leading-none",
           red ? "text-[#9F3F3F]" : "text-[#111111]",
         ].join(" ")}
       >
         {card.rank}
       </span>
+
       <span
         className={[
-          "text-xl font-black leading-none",
+          "text-lg font-black leading-none",
           red ? "text-[#9F3F3F]" : "text-[#111111]",
         ].join(" ")}
       >
@@ -185,7 +174,7 @@ export default function Page() {
   const [combo, setCombo] = useState(0);
   const [turnsSinceHand, setTurnsSinceHand] = useState(0);
   const [lastHands, setLastHands] = useState<HandResult[]>([]);
-  const [message, setMessage] = useState("Place a card.");
+  const [message, setMessage] = useState("No hand.");
 
   useEffect(() => {
     const newDeck = shuffle(createDeck());
@@ -351,11 +340,13 @@ export default function Page() {
                   >
                     {cell ? (
                       <div className="absolute inset-1">
-                        <CardView card={cell} compact />
+                        <CardView card={cell} />
                       </div>
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xl font-light text-white/12">+</span>
+                        <span className="text-xl font-light text-white/12">
+                          +
+                        </span>
                       </div>
                     )}
                   </button>
