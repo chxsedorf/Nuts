@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Board, Card, HandResult, Rank, Suit } from "../types/game";
 import { judgeHandsAfterPlace } from "../lib/handJudge";
 
@@ -23,7 +23,9 @@ const RANKS: Rank[] = [
 ];
 
 function createEmptyBoard(): Board {
-  return Array.from({ length: 5 }, () => Array.from({ length: 5 }, () => null));
+  return Array.from({ length: 5 }, () =>
+    Array.from({ length: 5 }, () => null)
+  );
 }
 
 function createDeck(): Card[] {
@@ -95,7 +97,13 @@ function handName(type: string): string {
   }
 }
 
-function CardView({ card, large = false }: { card: Card; large?: boolean }) {
+function CardView({
+  card,
+  large = false,
+}: {
+  card: Card;
+  large?: boolean;
+}) {
   const red = isRedSuit(card.suit);
 
   return (
@@ -128,185 +136,6 @@ function CardView({ card, large = false }: { card: Card; large?: boolean }) {
       </span>
     </div>
   );
-}
-
-type QuietSoundName =
-  | "place"
-  | "pair"
-  | "clear"
-  | "combo"
-  | "restart"
-  | "blocked";
-
-function useQuietSoundEngine() {
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const [enabled, setEnabled] = useState(true);
-
-  function getAudioContext(): AudioContext | null {
-    if (typeof window === "undefined") return null;
-
-    const AudioContextClass =
-      window.AudioContext ||
-      (
-        window as typeof window & {
-          webkitAudioContext?: typeof AudioContext;
-        }
-      ).webkitAudioContext;
-
-    if (!AudioContextClass) return null;
-
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContextClass();
-    }
-
-    return audioContextRef.current;
-  }
-
-  function playTone({
-    frequency,
-    delay = 0,
-    duration = 0.06,
-    volume = 0.018,
-    type = "sine",
-    lowpass = 2800,
-  }: {
-    frequency: number;
-    delay?: number;
-    duration?: number;
-    volume?: number;
-    type?: OscillatorType;
-    lowpass?: number;
-  }) {
-    const context = getAudioContext();
-    if (!context) return;
-
-    void context.resume();
-
-    const now = context.currentTime;
-    const start = now + delay;
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    const filter = context.createBiquadFilter();
-
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, start);
-
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(lowpass, start);
-    filter.Q.setValueAtTime(0.6, start);
-
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.linearRampToValueAtTime(volume, start + 0.008);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-
-    oscillator.connect(filter);
-    filter.connect(gain);
-    gain.connect(context.destination);
-
-    oscillator.start(start);
-    oscillator.stop(start + duration + 0.02);
-  }
-
-  function play(name: QuietSoundName) {
-    if (!enabled) return;
-
-    switch (name) {
-      case "place":
-        playTone({
-          frequency: 620,
-          duration: 0.035,
-          volume: 0.012,
-          lowpass: 2200,
-        });
-        break;
-      case "pair":
-        playTone({
-          frequency: 520,
-          duration: 0.07,
-          volume: 0.014,
-          lowpass: 2400,
-        });
-        playTone({
-          frequency: 680,
-          delay: 0.045,
-          duration: 0.09,
-          volume: 0.012,
-          lowpass: 2600,
-        });
-        break;
-      case "clear":
-        playTone({
-          frequency: 392,
-          duration: 0.08,
-          volume: 0.014,
-          lowpass: 2200,
-        });
-        playTone({
-          frequency: 494,
-          delay: 0.04,
-          duration: 0.1,
-          volume: 0.013,
-          lowpass: 2400,
-        });
-        playTone({
-          frequency: 659,
-          delay: 0.085,
-          duration: 0.12,
-          volume: 0.011,
-          lowpass: 2600,
-        });
-        break;
-      case "combo":
-        playTone({
-          frequency: 880,
-          duration: 0.045,
-          volume: 0.01,
-          lowpass: 3000,
-        });
-        playTone({
-          frequency: 1175,
-          delay: 0.04,
-          duration: 0.055,
-          volume: 0.008,
-          lowpass: 3200,
-        });
-        break;
-      case "restart":
-        playTone({
-          frequency: 330,
-          duration: 0.06,
-          volume: 0.012,
-          lowpass: 1800,
-        });
-        playTone({
-          frequency: 247,
-          delay: 0.045,
-          duration: 0.08,
-          volume: 0.01,
-          lowpass: 1600,
-        });
-        break;
-      case "blocked":
-        playTone({
-          frequency: 180,
-          duration: 0.035,
-          volume: 0.01,
-          type: "triangle",
-          lowpass: 900,
-        });
-        break;
-    }
-  }
-
-  function toggleEnabled() {
-    setEnabled((current) => !current);
-  }
-
-  return {
-    enabled,
-    play,
-    toggleEnabled,
-  };
 }
 
 function MiniCardView({ card }: { card: Card }) {
@@ -369,8 +198,6 @@ export default function Page() {
   }, [lastHands]);
 
   function resetGame() {
-    sound.play("restart");
-
     const newDeck = shuffle(createDeck());
 
     setBoard(createEmptyBoard());
@@ -385,13 +212,7 @@ export default function Page() {
 
   function placeCard(row: number, col: number) {
     if (!currentCard) return;
-
-    if (board[row][col]) {
-      sound.play("blocked");
-      return;
-    }
-
-    sound.play("place");
+    if (board[row][col]) return;
 
     const nextBoard = board.map((line) => [...line]);
     nextBoard[row][col] = currentCard;
@@ -417,19 +238,6 @@ export default function Page() {
     for (const hand of hands) {
       const comboMultiplier = Math.max(1, nextCombo);
       gainedScore += hand.score * comboMultiplier;
-    }
-
-    if (hands.length > 0) {
-      const hasClearHand = hands.some((hand) => hand.shouldClear);
-      window.setTimeout(() => {
-        sound.play(hasClearHand ? "clear" : "pair");
-      }, 35);
-
-      if (nextCombo >= 2) {
-        window.setTimeout(() => {
-          sound.play("combo");
-        }, 150);
-      }
     }
 
     for (const hand of hands) {
@@ -543,29 +351,22 @@ export default function Page() {
                     )}
                   </button>
                 );
-              }),
+              })
             )}
           </div>
         </section>
 
         <footer className="flex h-[48px] shrink-0 items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 backdrop-blur-xl">
-          <p className="truncate text-sm font-bold text-[#F5F1E8]">{message}</p>
+          <p className="truncate text-sm font-bold text-[#F5F1E8]">
+            {message}
+          </p>
 
-          <div className="ml-3 flex items-center gap-2">
-            <button
-              onClick={sound.toggleEnabled}
-              className="rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/65"
-            >
-              {sound.enabled ? "Sound" : "Mute"}
-            </button>
-
-            <button
-              onClick={resetGame}
-              className="rounded-xl bg-[#F5F1E8] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-black"
-            >
-              Restart
-            </button>
-          </div>
+          <button
+            onClick={resetGame}
+            className="ml-3 rounded-xl bg-[#F5F1E8] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-black"
+          >
+            Restart
+          </button>
         </footer>
       </div>
 
@@ -623,13 +424,6 @@ export default function Page() {
           >
             Restart
           </button>
-
-          <button
-            onClick={sound.toggleEnabled}
-            className="mt-3 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-white/55 transition hover:bg-white/[0.07]"
-          >
-            {sound.enabled ? "Sound On" : "Sound Off"}
-          </button>
         </aside>
 
         <section className="flex min-h-[620px] items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.025] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl">
@@ -667,7 +461,7 @@ export default function Page() {
                     )}
                   </button>
                 );
-              }),
+              })
             )}
           </div>
         </section>
