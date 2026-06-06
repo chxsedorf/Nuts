@@ -336,6 +336,10 @@ export default function Page() {
   const [message, setMessage] = useState("No hand.");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"rules" | "hands" | "combo" | "sfx" | "privacy">("rules");
+  const [pressedCell, setPressedCell] = useState<string | null>(null);
+  const [deniedCell, setDeniedCell] = useState<string | null>(null);
+  const [comboPulse, setComboPulse] = useState(false);
+  const [boardPulse, setBoardPulse] = useState<"hand" | "clear" | null>(null);
 
   useEffect(() => {
     const newDeck = shuffle(createDeck());
@@ -367,6 +371,40 @@ export default function Page() {
     return set;
   }, [lastHands]);
 
+  function flashPressedCell(row: number, col: number) {
+    const key = `${row}-${col}`;
+    setPressedCell(key);
+
+    window.setTimeout(() => {
+      setPressedCell((current) => (current === key ? null : current));
+    }, 150);
+  }
+
+  function flashDeniedCell(row: number, col: number) {
+    const key = `${row}-${col}`;
+    setDeniedCell(key);
+
+    window.setTimeout(() => {
+      setDeniedCell((current) => (current === key ? null : current));
+    }, 180);
+  }
+
+  function flashBoard(type: "hand" | "clear") {
+    setBoardPulse(type);
+
+    window.setTimeout(() => {
+      setBoardPulse(null);
+    }, type === "clear" ? 320 : 240);
+  }
+
+  function flashCombo() {
+    setComboPulse(true);
+
+    window.setTimeout(() => {
+      setComboPulse(false);
+    }, 260);
+  }
+
   function resetGame() {
     sound.play("restart");
     haptics.play("restart");
@@ -383,6 +421,10 @@ export default function Page() {
     setMessage("New game.");
     setIsGameOver(false);
     setIsNewBest(false);
+    setPressedCell(null);
+    setDeniedCell(null);
+    setComboPulse(false);
+    setBoardPulse(null);
   }
 
   function placeCard(row: number, col: number) {
@@ -401,9 +443,11 @@ export default function Page() {
     if (board[row][col]) {
       sound.play("deny");
       haptics.play("deny");
+      flashDeniedCell(row, col);
       return;
     }
 
+    flashPressedCell(row, col);
     sound.play("place");
     haptics.play("place");
 
@@ -484,6 +528,7 @@ export default function Page() {
     if (hands.length > 0) {
       const hasClearHand = hands.some((hand) => hand.shouldClear);
       setMessage(hands.map((hand) => handName(hand.type)).join(" + "));
+      flashBoard(hasClearHand ? "clear" : "hand");
 
       window.setTimeout(() => {
         sound.play(hasClearHand ? "clear" : "pair");
@@ -491,6 +536,8 @@ export default function Page() {
       }, 35);
 
       if (nextCombo >= 2) {
+        flashCombo();
+
         window.setTimeout(() => {
           sound.play("combo");
           haptics.play("combo");
@@ -544,7 +591,14 @@ export default function Page() {
               <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">
                 Combo
               </p>
-              <p className="text-xl font-black text-[#D6B36A]">x{combo}</p>
+              <p
+                className={[
+                  "text-xl font-black text-[#D6B36A] transition duration-300",
+                  comboPulse ? "scale-[1.08] text-[#F5F1E8]" : "",
+                ].join(" ")}
+              >
+                x{combo}
+              </p>
             </div>
 
             <div className="text-right">
@@ -564,12 +618,20 @@ export default function Page() {
           </div>
         </header>
 
-        <section className="flex min-h-0 flex-1 items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.025] p-2 backdrop-blur-xl">
+        <section
+          className={[
+            "flex min-h-0 flex-1 items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.025] p-2 backdrop-blur-xl transition duration-300",
+            boardPulse === "hand" ? "bg-[#D6B36A]/[0.025]" : "",
+            boardPulse === "clear" ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.035]" : "",
+          ].join(" ")}
+        >
           <div className="grid aspect-square h-full max-h-full max-w-full grid-cols-5 gap-2">
             {board.map((line, row) =>
               line.map((cell, col) => {
                 const key = `${row}-${col}`;
                 const isHighlighted = highlightedCells.has(key);
+                const isPressed = pressedCell === key;
+                const isDenied = deniedCell === key;
 
                 return (
                   <button
@@ -580,8 +642,10 @@ export default function Page() {
                       "group relative overflow-hidden rounded-[16px] border transition duration-200",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
                       cell ? "border-white/10" : "border-white/[0.075]",
+                      isPressed ? "scale-[0.965] bg-white/[0.085]" : "",
+                      isDenied ? "translate-x-[1px] border-[#9F3F3F]/45 bg-[#9F3F3F]/[0.045]" : "",
                       isHighlighted
-                        ? "border-[#D6B36A]/80 shadow-[0_0_0_1px_rgba(214,179,106,0.45),0_0_24px_rgba(214,179,106,0.22)]"
+                        ? "border-[#D6B36A]/55 bg-[#D6B36A]/[0.035] shadow-[0_0_0_1px_rgba(214,179,106,0.18)]"
                         : "",
                     ].join(" ")}
                   >
@@ -668,7 +732,12 @@ export default function Page() {
               <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/35">
                 Combo
               </p>
-              <p className="mt-2 text-4xl font-black tracking-[-0.06em] text-[#D6B36A]">
+              <p
+                className={[
+                  "mt-2 text-4xl font-black tracking-[-0.06em] text-[#D6B36A] transition duration-300",
+                  comboPulse ? "scale-[1.035] text-[#F5F1E8]" : "",
+                ].join(" ")}
+              >
                 x{combo}
               </p>
             </div>
@@ -695,12 +764,20 @@ export default function Page() {
           </button>
         </aside>
 
-        <section className="flex min-h-[620px] items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.025] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+        <section
+          className={[
+            "flex min-h-[620px] items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.025] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl transition duration-300",
+            boardPulse === "hand" ? "bg-[#D6B36A]/[0.025]" : "",
+            boardPulse === "clear" ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.035]" : "",
+          ].join(" ")}
+        >
           <div className="grid aspect-square w-full max-w-[680px] grid-cols-5 gap-3">
             {board.map((line, row) =>
               line.map((cell, col) => {
                 const key = `${row}-${col}`;
                 const isHighlighted = highlightedCells.has(key);
+                const isPressed = pressedCell === key;
+                const isDenied = deniedCell === key;
 
                 return (
                   <button
@@ -711,8 +788,10 @@ export default function Page() {
                       "group relative overflow-hidden rounded-[22px] border transition duration-200",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
                       cell ? "border-white/10" : "border-white/[0.075]",
+                      isPressed ? "scale-[0.975] bg-white/[0.085]" : "",
+                      isDenied ? "translate-x-[1px] border-[#9F3F3F]/45 bg-[#9F3F3F]/[0.045]" : "",
                       isHighlighted
-                        ? "border-[#D6B36A]/80 shadow-[0_0_0_1px_rgba(214,179,106,0.45),0_0_34px_rgba(214,179,106,0.22)]"
+                        ? "border-[#D6B36A]/55 bg-[#D6B36A]/[0.035] shadow-[0_0_0_1px_rgba(214,179,106,0.18)]"
                         : "",
                     ].join(" ")}
                   >
