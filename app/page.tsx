@@ -23,6 +23,7 @@ const RANKS: Rank[] = [
 ];
 
 type SoundType = "place" | "pair" | "clear" | "combo" | "deny" | "restart";
+type HapticType = "place" | "pair" | "clear" | "combo" | "deny" | "restart";
 
 function createEmptyBoard(): Board {
   return Array.from({ length: 5 }, () =>
@@ -221,6 +222,28 @@ function useQuietSound() {
   };
 }
 
+function useQuietHaptics() {
+  function play(type: HapticType) {
+    if (typeof window === "undefined") return;
+    if (!("vibrate" in navigator)) return;
+
+    const patterns: Record<HapticType, number | number[]> = {
+      place: 10,
+      pair: [12, 28, 16],
+      clear: [16, 32, 24],
+      combo: [8, 22, 8, 22, 14],
+      deny: 24,
+      restart: [10, 24, 10],
+    };
+
+    navigator.vibrate(patterns[type]);
+  }
+
+  return {
+    play,
+  };
+}
+
 function CardView({
   card,
   large = false,
@@ -290,6 +313,7 @@ function MiniCardView({ card }: { card: Card }) {
 
 export default function Page() {
   const sound = useQuietSound();
+  const haptics = useQuietHaptics();
   const [board, setBoard] = useState<Board>(() => createEmptyBoard());
   const [deck, setDeck] = useState<Card[]>([]);
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
@@ -338,6 +362,7 @@ export default function Page() {
 
   function resetGame() {
     sound.play("restart");
+    haptics.play("restart");
 
     const newDeck = shuffle(createDeck());
 
@@ -356,20 +381,24 @@ export default function Page() {
   function placeCard(row: number, col: number) {
     if (isGameOver) {
       sound.play("deny");
+      haptics.play("deny");
       return;
     }
 
     if (!currentCard) {
       sound.play("deny");
+      haptics.play("deny");
       return;
     }
 
     if (board[row][col]) {
       sound.play("deny");
+      haptics.play("deny");
       return;
     }
 
     sound.play("place");
+    haptics.play("place");
 
     const nextBoard = board.map((line) => [...line]);
     nextBoard[row][col] = currentCard;
@@ -451,11 +480,13 @@ export default function Page() {
 
       window.setTimeout(() => {
         sound.play(hasClearHand ? "clear" : "pair");
+        haptics.play(hasClearHand ? "clear" : "pair");
       }, 35);
 
       if (nextCombo >= 2) {
         window.setTimeout(() => {
           sound.play("combo");
+          haptics.play("combo");
         }, 155);
       }
     } else if (!shouldEndGame) {
