@@ -625,7 +625,7 @@ export default function Page() {
             boardPulse === "clear" ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.035]" : "",
           ].join(" ")}
         >
-          <div className="grid aspect-square h-full max-h-full max-w-full grid-cols-5 gap-2">
+          <div className="grid aspect-square h-[92%] max-h-[92%] max-w-full grid-cols-5 gap-2">
             {board.map((line, row) =>
               line.map((cell, col) => {
                 const key = `${row}-${col}`;
