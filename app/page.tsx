@@ -118,7 +118,7 @@ function useQuietSound() {
     const now = ctx.currentTime;
 
     const safeVolume = Math.min(1, Math.max(0, volume));
-    const masterPeak = 0.052 * safeVolume;
+    const masterPeak = 0.13 * safeVolume;
 
     const master = ctx.createGain();
     master.gain.setValueAtTime(0.0001, now);
@@ -146,7 +146,7 @@ function useQuietSound() {
       osc.type = "sine";
       osc.frequency.setValueAtTime(freq, start);
 
-      const notePeak = (type === "deny" ? 0.032 : 0.06) * safeVolume;
+      const notePeak = (type === "deny" ? 0.08 : 0.15) * safeVolume;
 
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(
