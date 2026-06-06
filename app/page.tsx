@@ -165,7 +165,13 @@ function useQuietSound() {
 
     const now = ctx.currentTime + 0.006;
     const safeVolume = Math.min(1, Math.max(0, volume));
-    const masterPeak = 0.13 * safeVolume;
+    const isMobileLike =
+      typeof window !== "undefined" &&
+      ((typeof window.matchMedia === "function" &&
+        window.matchMedia("(pointer: coarse)").matches) ||
+        navigator.maxTouchPoints > 0);
+    const internalVolumeBoost = isMobileLike ? 3 : 1;
+    const masterPeak = 0.13 * safeVolume * internalVolumeBoost;
 
     const master = ctx.createGain();
     master.gain.setValueAtTime(0.0001, now);
@@ -193,7 +199,8 @@ function useQuietSound() {
       osc.type = "sine";
       osc.frequency.setValueAtTime(freq, start);
 
-      const notePeak = (type === "deny" ? 0.08 : 0.15) * safeVolume;
+      const notePeak =
+        (type === "deny" ? 0.08 : 0.15) * safeVolume * internalVolumeBoost;
 
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(
