@@ -636,7 +636,7 @@ export default function Page() {
             boardPulse === "clear" ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.035]" : "",
           ].join(" ")}
         >
-          <div className="grid aspect-square h-[92%] max-h-[92%] max-w-full grid-cols-5 gap-2">
+          <div className="grid aspect-square h-[95%] max-h-[95%] max-w-full grid-cols-5 gap-2">
             {board.map((line, row) =>
               line.map((cell, col) => {
                 const key = `${row}-${col}`;
@@ -694,7 +694,7 @@ export default function Page() {
       </div>
 
       {/* Desktop layout */}
-      <div className="relative mx-auto hidden h-[calc(100svh-24px)] w-full max-w-none grid-cols-[300px_minmax(720px,1fr)_320px] gap-4 lg:grid">
+      <div className="relative mx-auto hidden h-[calc(100svh-24px)] w-full max-w-none grid-cols-[280px_minmax(760px,1fr)_300px] gap-3 lg:grid">
         <aside className="rounded-[30px] border border-white/10 bg-white/[0.035] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur-xl">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.38em] text-[#D6B36A]">
@@ -759,12 +759,12 @@ export default function Page() {
 
         <section
           className={[
-            "flex h-full min-h-0 items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.025] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl transition duration-300",
+            "flex h-full min-h-0 items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.025] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl transition duration-300",
             boardPulse === "hand" ? "bg-[#D6B36A]/[0.025]" : "",
             boardPulse === "clear" ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.035]" : "",
           ].join(" ")}
         >
-          <div className="grid aspect-square h-[min(780px,calc(100svh-120px))] max-h-full max-w-full grid-cols-5 gap-3">
+          <div className="grid aspect-square h-[min(860px,calc(100svh-72px))] max-h-full max-w-full grid-cols-5 gap-3">
             {board.map((line, row) =>
               line.map((cell, col) => {
                 const key = `${row}-${col}`;
@@ -791,7 +791,7 @@ export default function Page() {
                     <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100 bg-[radial-gradient(circle_at_top,#ffffff18,transparent_60%)]" />
 
                     {cell ? (
-                      <div className="absolute inset-2">
+                      <div className="absolute inset-1.5">
                         <CardView card={cell} />
                       </div>
                     ) : (
@@ -876,13 +876,10 @@ export default function Page() {
             ) : null}
 
             <button
-              onClick={() => {
-                setSettingsTab("rules");
-                setIsSettingsOpen(true);
-              }}
-              className="mt-6 w-full select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/70 transition hover:bg-white/[0.07] active:scale-[0.99]"
+              onClick={resetGame}
+              className="mt-6 w-full select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black transition hover:bg-white active:scale-[0.99]"
             >
-              ⚙ Settings
+              Restart
             </button>
           </div>
         </div>
