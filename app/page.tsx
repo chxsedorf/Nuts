@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Board, Card, HandResult, HandType, Rank, Suit } from "../types/game";
 import { judgeHandsAfterPlace } from "../lib/handJudge";
 
@@ -124,21 +124,45 @@ function handName(type: string): string {
 
 function useQuietSound() {
   const [volume, setVolume] = useState(0.7);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
-  function play(type: SoundType) {
-    if (volume <= 0) return;
-    if (typeof window === "undefined") return;
+  function getAudioContext(): AudioContext | null {
+    if (typeof window === "undefined") return null;
 
     const AudioContextClass =
       window.AudioContext ||
       (window as typeof window & { webkitAudioContext?: typeof AudioContext })
         .webkitAudioContext;
 
-    if (!AudioContextClass) return;
+    if (!AudioContextClass) return null;
 
-    const ctx = new AudioContextClass();
-    const now = ctx.currentTime;
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextClass();
+    }
 
+    return audioContextRef.current;
+  }
+
+  function unlock() {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === "suspended") {
+      void ctx.resume();
+    }
+  }
+
+  function play(type: SoundType) {
+    if (volume <= 0) return;
+
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === "suspended") {
+      void ctx.resume();
+    }
+
+    const now = ctx.currentTime + 0.006;
     const safeVolume = Math.min(1, Math.max(0, volume));
     const masterPeak = 0.13 * safeVolume;
 
@@ -185,13 +209,14 @@ function useQuietSound() {
     });
 
     window.setTimeout(() => {
-      void ctx.close();
-    }, 320);
+      master.disconnect();
+    }, 360);
   }
 
   return {
     volume,
     setVolume,
+    unlock,
     play,
   };
 }
@@ -449,7 +474,10 @@ export default function Page() {
   }
 
   return (
-    <main className="h-svh overflow-hidden bg-[#090909] text-[#F3F0E8] lg:min-h-screen lg:px-5 lg:py-5">
+    <main
+      onPointerDown={sound.unlock}
+      className="h-svh overflow-hidden bg-[#090909] text-[#F3F0E8] lg:min-h-screen lg:px-5 lg:py-5"
+    >
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#28221A_0%,transparent_34%),linear-gradient(180deg,#090909_0%,#101010_100%)]" />
       <div className="pointer-events-none fixed inset-0 opacity-[0.04] [background-image:linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] [background-size:48px_48px]" />
 
@@ -897,9 +925,6 @@ export default function Page() {
                     <h3 className="text-xl font-black text-[#F5F1E8]">
                       SFX Volume
                     </h3>
-                    <p className="mt-2 text-sm leading-6 text-white/50">
-                      Offsuit風の静かな効果音です。0%にすると無音になります。
-                    </p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
