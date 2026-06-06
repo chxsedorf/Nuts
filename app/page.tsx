@@ -101,7 +101,7 @@ function handName(type: string): string {
 
 
 function useQuietSound() {
-  const [volume, setVolume] = useState(0.45);
+  const [volume, setVolume] = useState(0.7);
 
   function play(type: SoundType) {
     if (volume <= 0) return;
@@ -118,7 +118,7 @@ function useQuietSound() {
     const now = ctx.currentTime;
 
     const safeVolume = Math.min(1, Math.max(0, volume));
-    const masterPeak = 0.026 * safeVolume;
+    const masterPeak = 0.052 * safeVolume;
 
     const master = ctx.createGain();
     master.gain.setValueAtTime(0.0001, now);
@@ -146,7 +146,7 @@ function useQuietSound() {
       osc.type = "sine";
       osc.frequency.setValueAtTime(freq, start);
 
-      const notePeak = (type === "deny" ? 0.016 : 0.03) * safeVolume;
+      const notePeak = (type === "deny" ? 0.032 : 0.06) * safeVolume;
 
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(
