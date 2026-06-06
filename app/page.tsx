@@ -98,6 +98,18 @@ function getBalancedScore(type: HandType): number {
   return BALANCED_SCORE_TABLE[type];
 }
 
+
+function cardImageSrc(card: Card): string {
+  const suitCode: Record<Suit, string> = {
+    club: "C",
+    diamond: "D",
+    heart: "H",
+    spade: "S",
+  };
+
+  return `/cards/${card.rank}${suitCode[card.suit]}.png`;
+}
+
 function handName(type: string): string {
   switch (type) {
     case "ROYAL_STRAIGHT_FLUSH":
@@ -259,62 +271,37 @@ function CardView({
   card: Card;
   large?: boolean;
 }) {
-  const red = isRedSuit(card.suit);
-
   return (
     <div
       className={[
-        "flex h-full w-full flex-col items-center justify-center rounded-[18px]",
-        "border border-black/10 bg-[#F5F1E8]",
-        "shadow-[0_8px_22px_rgba(0,0,0,0.14)]",
-        large ? "gap-4 p-5" : "gap-2 p-3",
+        "flex h-full w-full items-center justify-center overflow-hidden rounded-[18px]",
+        "bg-transparent",
+        large ? "p-0" : "p-0",
       ].join(" ")}
     >
-      <span
+      <img
+        src={cardImageSrc(card)}
+        alt={`${card.rank} ${card.suit}`}
+        draggable={false}
         className={[
-          "font-black leading-none tracking-tight",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-          large ? "text-5xl" : "text-2xl",
+          "h-full w-full select-none object-contain",
+          "[-webkit-user-drag:none]",
+          large ? "drop-shadow-[0_18px_34px_rgba(0,0,0,0.34)]" : "drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
         ].join(" ")}
-      >
-        {card.rank}
-      </span>
-
-      <span
-        className={[
-          "font-black leading-none",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-          large ? "text-6xl" : "text-3xl",
-        ].join(" ")}
-      >
-        {suitSymbol(card.suit)}
-      </span>
+      />
     </div>
   );
 }
 
 function MiniCardView({ card }: { card: Card }) {
-  const red = isRedSuit(card.suit);
-
   return (
-    <div className="flex h-16 w-12 flex-col items-center justify-center gap-1 rounded-xl border border-black/10 bg-[#F5F1E8] shadow-lg">
-      <span
-        className={[
-          "text-base font-black leading-none",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-        ].join(" ")}
-      >
-        {card.rank}
-      </span>
-
-      <span
-        className={[
-          "text-lg font-black leading-none",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-        ].join(" ")}
-      >
-        {suitSymbol(card.suit)}
-      </span>
+    <div className="flex h-16 w-12 items-center justify-center overflow-hidden rounded-xl bg-transparent">
+      <img
+        src={cardImageSrc(card)}
+        alt={`${card.rank} ${card.suit}`}
+        draggable={false}
+        className="h-full w-full select-none object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.24)] [-webkit-user-drag:none]"
+      />
     </div>
   );
 }
