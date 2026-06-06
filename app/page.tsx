@@ -74,6 +74,12 @@ function isRedSuit(suit: Suit): boolean {
   return suit === "heart" || suit === "diamond";
 }
 
+function hasEmptyCell(board: Board): boolean {
+  return board.some((line) => line.some((cell) => cell === null));
+}
+
+const HIGH_SCORE_KEY = "nuts-high-score";
+
 function handName(type: string): string {
   switch (type) {
     case "ROYAL_STRAIGHT_FLUSH":
@@ -249,6 +255,9 @@ export default function Page() {
   const [isReady, setIsReady] = useState(false);
 
   const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [isNewBest, setIsNewBest] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
   const [combo, setCombo] = useState(0);
   const [turnsSinceHand, setTurnsSinceHand] = useState(0);
   const [lastHands, setLastHands] = useState<HandResult[]>([]);
@@ -263,6 +272,15 @@ export default function Page() {
     setCurrentCard(newDeck[0] ?? null);
     setDeck(newDeck.slice(1));
     setIsReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const saved = Number(window.localStorage.getItem(HIGH_SCORE_KEY) ?? "0");
+    if (Number.isFinite(saved) && saved > 0) {
+      setHighScore(saved);
+    }
   }, []);
 
   const highlightedCells = useMemo(() => {
@@ -290,9 +308,16 @@ export default function Page() {
     setTurnsSinceHand(0);
     setLastHands([]);
     setMessage("New game.");
+    setIsGameOver(false);
+    setIsNewBest(false);
   }
 
   function placeCard(row: number, col: number) {
+    if (isGameOver) {
+      sound.play("deny");
+      return;
+    }
+
     if (!currentCard) {
       sound.play("deny");
       return;
@@ -339,16 +364,46 @@ export default function Page() {
       }
     }
 
-    const nextDeck = [...deck];
-    const nextCard = nextDeck.shift() ?? null;
+    let nextDeck = [...deck];
+    let nextCard = nextDeck.shift() ?? null;
+
+    // Endless mode:
+    // When the draw pile runs out, quietly reshuffle a fresh 52-card deck.
+    // The game only ends when the board has no empty cells left.
+    if (!nextCard) {
+      const freshDeck = shuffle(createDeck());
+      nextCard = freshDeck[0] ?? null;
+      nextDeck = freshDeck.slice(1);
+    }
+
+    const finalScore = score + gainedScore;
+    const shouldEndGame = !hasEmptyCell(nextBoard);
 
     setBoard(nextBoard);
     setDeck(nextDeck);
     setCurrentCard(nextCard);
-    setScore((prev) => prev + gainedScore);
+    setScore(finalScore);
     setCombo(nextCombo);
     setTurnsSinceHand(nextTurnsSinceHand);
     setLastHands(hands);
+
+    if (shouldEndGame) {
+      setIsGameOver(true);
+      setMessage("Game Over");
+
+      setHighScore((prev) => {
+        if (finalScore > prev) {
+          setIsNewBest(true);
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(HIGH_SCORE_KEY, String(finalScore));
+          }
+          return finalScore;
+        }
+
+        setIsNewBest(false);
+        return prev;
+      });
+    }
 
     if (hands.length > 0) {
       const hasClearHand = hands.some((hand) => hand.shouldClear);
@@ -363,7 +418,7 @@ export default function Page() {
           sound.play("combo");
         }, 155);
       }
-    } else {
+    } else if (!shouldEndGame) {
       setMessage("No hand.");
     }
   }
@@ -392,6 +447,9 @@ export default function Page() {
             </p>
             <p className="mt-1 text-3xl font-black tracking-[-0.08em]">
               {score}
+            </p>
+            <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
+              Best {highScore}
             </p>
           </div>
 
@@ -431,6 +489,7 @@ export default function Page() {
                   <button
                     key={key}
                     onClick={() => placeCard(row, col)}
+                    disabled={isGameOver}
                     className={[
                       "group relative overflow-hidden rounded-[16px] border transition duration-200",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
@@ -507,6 +566,15 @@ export default function Page() {
 
             <div className="border-t border-white/10 pt-5">
               <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/35">
+                Best
+              </p>
+              <p className="mt-2 text-4xl font-black tracking-[-0.06em] text-white/70">
+                {highScore}
+              </p>
+            </div>
+
+            <div className="border-t border-white/10 pt-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/35">
                 Combo
               </p>
               <p className="mt-2 text-4xl font-black tracking-[-0.06em] text-[#D6B36A]">
@@ -547,6 +615,7 @@ export default function Page() {
                   <button
                     key={key}
                     onClick={() => placeCard(row, col)}
+                    disabled={isGameOver}
                     className={[
                       "group relative overflow-hidden rounded-[22px] border transition duration-200",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
@@ -621,6 +690,37 @@ export default function Page() {
 
         </aside>
       </div>
+
+      {isGameOver ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-[440px] rounded-[30px] border border-white/10 bg-[#121212] p-6 text-center shadow-[0_24px_90px_rgba(0,0,0,0.5)]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-[#D6B36A]">
+              {isNewBest ? "New Best" : "Game Over"}
+            </p>
+            <h2 className="mt-3 text-5xl font-black tracking-[-0.08em] text-[#F5F1E8]">
+              {score}
+            </h2>
+            <p className="mt-2 text-sm font-bold uppercase tracking-[0.18em] text-white/35">
+              Best Score {highScore}
+            </p>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-sm leading-6 text-white/50">
+                {isNewBest
+                  ? "最高スコアを更新しました。もう一度走って、さらに上を狙いましょう。"
+                  : "置けるマスがなくなりました。ハイスコアを更新できるよう、もう一度挑戦しましょう。"}
+              </p>
+            </div>
+
+            <button
+              onClick={resetGame}
+              className="mt-6 w-full rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black transition hover:bg-white active:scale-[0.99]"
+            >
+              Restart
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {isSettingsOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
@@ -712,7 +812,7 @@ export default function Page() {
                     空白を挟んだカードはつながっていないため、役として成立しません。実プレイでは、今回置いたカードを含む役だけがスコア・コンボ・演出の対象になります。
                   </p>
                   <p>
-                    One Pairはスコアとコンボ対象ですが消えません。Three Card、Straight、Full HouseなどOne Pairより強い役は成立後に消えます。
+                    One Pairはスコアとコンボ対象ですが消えません。Three Card、Straight、Full HouseなどOne Pairより強い役は成立後に消えます。デッキが尽きると自動で新しい山札に切り替わります。
                   </p>
                   <p>
                     Straightは3枚以上で成立します。A-2-3、3-2-A、Q-K-A、A-K-QもStraightとして扱います。
