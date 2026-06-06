@@ -318,6 +318,58 @@ function MiniCardView({ card }: { card: Card }) {
   );
 }
 
+
+function LongPressRestartButton({
+  onConfirm,
+  className,
+  children = "Restart",
+}: {
+  onConfirm: () => void;
+  className: string;
+  children?: string;
+}) {
+  const timerRef = useRef<number | null>(null);
+  const [isHolding, setIsHolding] = useState(false);
+
+  function clearHold() {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsHolding(false);
+  }
+
+  function startHold() {
+    clearHold();
+    setIsHolding(true);
+
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      setIsHolding(false);
+      onConfirm();
+    }, 720);
+  }
+
+  useEffect(() => {
+    return () => clearHold();
+  }, []);
+
+  return (
+    <button
+      type="button"
+      onPointerDown={startHold}
+      onPointerUp={clearHold}
+      onPointerLeave={clearHold}
+      onPointerCancel={clearHold}
+      onContextMenu={(event) => event.preventDefault()}
+      className={className}
+      aria-label="Hold to restart"
+    >
+      {isHolding ? "Hold..." : children}
+    </button>
+  );
+}
+
 export default function Page() {
   const sound = useQuietSound();
   const haptics = useQuietHaptics();
@@ -572,54 +624,47 @@ export default function Page() {
           paddingTop: "max(18px, calc(env(safe-area-inset-top) + 16px))",
           paddingBottom: "max(12px, calc(env(safe-area-inset-bottom) + 12px))",
         }}>
-        <header className="flex h-[86px] shrink-0 items-center justify-between rounded-[24px] border border-white/10 bg-white/[0.04] px-4 backdrop-blur-xl">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#D6B36A]">
-              NUTS
+        <header className="grid h-[82px] shrink-0 grid-cols-[1fr_auto_auto] items-center gap-3 rounded-[24px] border border-white/10 bg-white/[0.04] px-4 backdrop-blur-xl">
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">
+              Score
             </p>
-            <p className="mt-1 text-3xl font-black tracking-[-0.08em]">
+            <p className="mt-1 text-4xl font-black leading-none tracking-[-0.08em]">
               {score}
             </p>
-            <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
-              Best {highScore}
+            <div className="mt-1 flex items-center gap-2">
+              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
+                Best {highScore}
+              </p>
+              {isNewBest ? (
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#D6B36A]">
+                  New Best
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="text-right">
+            <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">
+              Combo
             </p>
-            {isNewBest ? (
-              <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-[#D6B36A]">
-                New Best
-              </p>
-            ) : null}
+            <p
+              className={[
+                "mt-1 text-2xl font-black leading-none text-[#D6B36A] transition duration-300",
+                comboPulse ? "scale-[1.08] text-[#F5F1E8]" : "",
+              ].join(" ")}
+            >
+              x{combo}
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">
-                Combo
-              </p>
-              <p
-                className={[
-                  "text-xl font-black text-[#D6B36A] transition duration-300",
-                  comboPulse ? "scale-[1.08] text-[#F5F1E8]" : "",
-                ].join(" ")}
-              >
-                x{combo}
-              </p>
+          {currentCard ? (
+            <MiniCardView card={currentCard} />
+          ) : (
+            <div className="flex h-16 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[10px] font-bold uppercase tracking-widest text-white/35">
+              End
             </div>
-
-            <div className="text-right">
-              <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">
-                Deck
-              </p>
-              <p className="text-xl font-black">{deck.length}</p>
-            </div>
-
-            {currentCard ? (
-              <MiniCardView card={currentCard} />
-            ) : (
-              <div className="flex h-16 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[10px] font-bold uppercase tracking-widest text-white/35">
-                End
-              </div>
-            )}
-          </div>
+          )}
         </header>
 
         <section
@@ -684,12 +729,10 @@ export default function Page() {
           </button>
 
 
-          <button
-            onClick={resetGame}
-            className="h-9 rounded-xl bg-[#F5F1E8] px-3 text-[10px] font-black uppercase tracking-[0.18em] text-black"
-          >
-            Restart
-          </button>
+          <LongPressRestartButton
+            onConfirm={resetGame}
+            className="h-9 min-w-[104px] rounded-xl bg-[#F5F1E8] px-3 text-[10px] font-black uppercase tracking-[0.18em] text-black transition active:scale-[0.98]"
+          />
         </footer>
       </div>
 
@@ -756,16 +799,14 @@ export default function Page() {
             </div>
           </div>
 
-          <button
-            onClick={resetGame}
+          <LongPressRestartButton
+            onConfirm={resetGame}
             className={[
               "mt-10 w-full rounded-2xl border border-white/10",
               "bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black",
-              "transition hover:scale-[1.015] hover:bg-white active:scale-[0.99]",
+              "transition hover:scale-[1.01] hover:bg-white active:scale-[0.99]",
             ].join(" ")}
-          >
-            Restart
-          </button>
+          />
         </aside>
 
         <section
@@ -886,12 +927,10 @@ export default function Page() {
               </div>
             ) : null}
 
-            <button
-              onClick={resetGame}
+            <LongPressRestartButton
+              onConfirm={resetGame}
               className="mt-6 w-full rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black transition hover:bg-white active:scale-[0.99]"
-            >
-              Restart
-            </button>
+            />
           </div>
         </div>
       ) : null}
