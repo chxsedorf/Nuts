@@ -561,13 +561,17 @@ export default function Page() {
   return (
     <main
       onPointerDown={sound.unlock}
-      className="h-svh overflow-hidden bg-[#090909] text-[#F3F0E8] lg:min-h-screen lg:px-5 lg:py-5"
+      className="h-[100dvh] overflow-hidden bg-[#090909] text-[#F3F0E8] lg:min-h-screen lg:px-5 lg:py-5"
     >
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#28221A_0%,transparent_34%),linear-gradient(180deg,#090909_0%,#101010_100%)]" />
       <div className="pointer-events-none fixed inset-0 opacity-[0.04] [background-image:linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] [background-size:48px_48px]" />
 
       {/* Mobile layout */}
-      <div className="relative flex h-svh flex-col gap-3 px-3 py-3 lg:hidden">
+      <div className="relative flex h-[100dvh] flex-col gap-3 px-3 lg:hidden"
+        style={{
+          paddingTop: "max(18px, calc(env(safe-area-inset-top) + 16px))",
+          paddingBottom: "max(12px, calc(env(safe-area-inset-bottom) + 12px))",
+        }}>
         <header className="flex h-[86px] shrink-0 items-center justify-between rounded-[24px] border border-white/10 bg-white/[0.04] px-4 backdrop-blur-xl">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#D6B36A]">
