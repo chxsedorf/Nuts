@@ -320,7 +320,7 @@ function CardView({
 
 function MiniCardView({ card }: { card: Card }) {
   return (
-    <div className="flex h-16 w-12 items-center justify-center overflow-hidden rounded-xl bg-transparent shadow-lg">
+    <div className="flex h-20 w-14 items-center justify-center overflow-hidden rounded-xl bg-transparent shadow-lg">
       <img
         src={cardImageSrc(card)}
         alt={`${card.rank} ${card.suit}`}
@@ -1169,17 +1169,17 @@ export default function Page() {
       ) : (
         <>
       {/* Mobile layout */}
-      <div className={["relative flex h-[100dvh] flex-col gap-3 px-3 transition duration-500 lg:hidden", runStartPulse ? "opacity-0 scale-[0.99]" : "opacity-100 scale-100"].join(" ")}
+      <div className={["relative flex h-[100dvh] flex-col gap-2 px-3 transition duration-500 lg:hidden", runStartPulse ? "opacity-0 scale-[0.99]" : "opacity-100 scale-100"].join(" ")}
         style={{
           paddingTop: "max(18px, calc(env(safe-area-inset-top) + 16px))",
           paddingBottom: "max(12px, calc(env(safe-area-inset-bottom) + 12px))",
         }}>
-        <header className="flex h-[86px] shrink-0 items-center justify-between rounded-[24px] border border-white/10 bg-white/[0.04] px-4 backdrop-blur-xl">
+        <header className="flex h-[108px] shrink-0 items-center justify-between rounded-[26px] border border-white/10 bg-white/[0.04] px-5 backdrop-blur-xl">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#D6B36A]">
               NUTS
             </p>
-            <p className="mt-1 text-3xl font-black tracking-[-0.08em]">
+            <p className="mt-1 text-4xl font-black tracking-[-0.08em]">
               {score}
             </p>
             <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
@@ -1211,13 +1211,13 @@ export default function Page() {
               <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">
                 Deck
               </p>
-              <p className="text-xl font-black">{deck.length}</p>
+              <p className="text-2xl font-black">{deck.length}</p>
             </div>
 
             {currentCard ? (
               <MiniCardView card={currentCard} />
             ) : (
-              <div className="flex h-16 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[10px] font-bold uppercase tracking-widest text-white/35">
+              <div className="flex h-20 w-14 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[10px] font-bold uppercase tracking-widest text-white/35">
                 End
               </div>
             )}
@@ -1226,10 +1226,10 @@ export default function Page() {
 
         <section
           className={[
-            "flex min-h-0 flex-1 items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.025] p-2 backdrop-blur-xl transition duration-300",
+            "flex min-h-0 flex-1 items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.025] p-1 backdrop-blur-xl transition duration-300",
           ].join(" ")}
         >
-          <div className="grid aspect-square h-[95%] max-h-[95%] max-w-full grid-cols-5 grid-rows-5 gap-2">
+          <div className="grid aspect-square h-full max-h-full max-w-full grid-cols-5 grid-rows-5 gap-2">
             {board.map((line, row) =>
               line.map((cell, col) => {
                 const key = `${row}-${col}`;
@@ -1285,7 +1285,7 @@ export default function Page() {
           </div>
         </section>
 
-        <footer className="flex h-[48px] shrink-0 items-center justify-start gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 backdrop-blur-xl">
+        <footer className="flex h-[44px] shrink-0 items-center justify-start gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 backdrop-blur-xl">
           <button
             onClick={() => {
               setSettingsTab("rules");
