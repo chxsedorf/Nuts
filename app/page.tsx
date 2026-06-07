@@ -331,6 +331,198 @@ function MiniCardView({ card }: { card: Card }) {
   );
 }
 
+
+function makeDevCard(rank: Rank, suit: Suit): Card {
+  return {
+    id: `${rank}-${suit}-dev-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    rank,
+    suit,
+  };
+}
+
+function suitLabel(suit: Suit): string {
+  switch (suit) {
+    case "spade":
+      return "♠ Spade";
+    case "heart":
+      return "♥ Heart";
+    case "diamond":
+      return "♦ Diamond";
+    case "club":
+      return "♣ Club";
+  }
+}
+
+function DevModePanel({
+  devRank,
+  devSuit,
+  onRankChange,
+  onSuitChange,
+  onClose,
+  onSetCurrentCard,
+  onClearBoard,
+  onResetScore,
+  onPrepareTripleA,
+  onPrepareStraightA23,
+  onPrepareStraightQKA,
+  onPrepareFullHouse,
+  onPrepareTwoPair,
+}: {
+  devRank: Rank;
+  devSuit: Suit;
+  onRankChange: (rank: Rank) => void;
+  onSuitChange: (suit: Suit) => void;
+  onClose: () => void;
+  onSetCurrentCard: () => void;
+  onClearBoard: () => void;
+  onResetScore: () => void;
+  onPrepareTripleA: () => void;
+  onPrepareStraightA23: () => void;
+  onPrepareStraightQKA: () => void;
+  onPrepareFullHouse: () => void;
+  onPrepareTwoPair: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 px-4 backdrop-blur-sm">
+      <div className="flex max-h-[92svh] w-full max-w-[620px] flex-col rounded-[28px] border border-[#D6B36A]/20 bg-[#111111] p-6 text-[#F5F1E8] shadow-[0_24px_90px_rgba(0,0,0,0.55)]">
+        <div className="flex shrink-0 items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.34em] text-[#D6B36A]">
+              Developer
+            </p>
+            <h2 className="mt-2 text-3xl font-black tracking-[-0.06em]">
+              Dev Mode
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-white/42">
+              役判定ロジックは変更せず、テスト盤面だけを作ります。
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="flex h-10 w-10 select-none items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-xl font-black text-white/70 transition hover:bg-white/[0.08]"
+            aria-label="Close dev mode"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mt-6 min-h-0 overflow-y-auto">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">
+                Current Card
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
+                    Rank
+                  </span>
+                  <select
+                    value={devRank}
+                    onChange={(event) => onRankChange(event.target.value as Rank)}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-3 text-sm font-bold text-white outline-none"
+                  >
+                    {RANKS.map((rank) => (
+                      <option key={rank} value={rank}>
+                        {rank}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
+                    Suit
+                  </span>
+                  <select
+                    value={devSuit}
+                    onChange={(event) => onSuitChange(event.target.value as Suit)}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-3 text-sm font-bold text-white outline-none"
+                  >
+                    {SUITS.map((suit) => (
+                      <option key={suit} value={suit}>
+                        {suitLabel(suit)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <button
+                onClick={onSetCurrentCard}
+                className="mt-4 w-full select-none touch-manipulation rounded-xl bg-[#F5F1E8] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black transition hover:bg-white active:scale-[0.99]"
+              >
+                Set Current Card
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">
+                Test Patterns
+              </p>
+
+              <div className="mt-4 space-y-2">
+                <button
+                  onClick={onPrepareTripleA}
+                  className="w-full select-none touch-manipulation rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/75 transition hover:bg-white/[0.08] active:scale-[0.99]"
+                >
+                  Prepare A A A
+                </button>
+
+                <button
+                  onClick={onPrepareStraightA23}
+                  className="w-full select-none touch-manipulation rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/75 transition hover:bg-white/[0.08] active:scale-[0.99]"
+                >
+                  Prepare A 2 3
+                </button>
+
+                <button
+                  onClick={onPrepareStraightQKA}
+                  className="w-full select-none touch-manipulation rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/75 transition hover:bg-white/[0.08] active:scale-[0.99]"
+                >
+                  Prepare Q K A
+                </button>
+
+                <button
+                  onClick={onPrepareFullHouse}
+                  className="w-full select-none touch-manipulation rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/75 transition hover:bg-white/[0.08] active:scale-[0.99]"
+                >
+                  Prepare AAA22
+                </button>
+
+                <button
+                  onClick={onPrepareTwoPair}
+                  className="w-full select-none touch-manipulation rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/75 transition hover:bg-white/[0.08] active:scale-[0.99]"
+                >
+                  Prepare K K 7 7
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <button
+              onClick={onClearBoard}
+              className="select-none touch-manipulation rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/[0.08] active:scale-[0.99]"
+            >
+              Clear Board
+            </button>
+
+            <button
+              onClick={onResetScore}
+              className="select-none touch-manipulation rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/[0.08] active:scale-[0.99]"
+            >
+              Reset Score
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Page() {
   const sound = useQuietSound();
   const haptics = useQuietHaptics();
@@ -367,6 +559,10 @@ export default function Page() {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState("");
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const [isDebugMode, setIsDebugMode] = useState(false);
+  const [devModeOpen, setDevModeOpen] = useState(false);
+  const [devRank, setDevRank] = useState<Rank>("A");
+  const [devSuit, setDevSuit] = useState<Suit>("spade");
 
   useEffect(() => {
     preloadCardImages();
@@ -377,6 +573,13 @@ export default function Page() {
     setCurrentCard(newDeck[0] ?? null);
     setDeck(newDeck.slice(1));
     setIsReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    setIsDebugMode(params.get("debug") === "1");
   }, []);
 
   useEffect(() => {
@@ -725,6 +928,115 @@ export default function Page() {
     } else {
       finishGameIfBoardFull(nextBoard, finalScore);
     }
+  }
+
+  function resetDevRuntimeState() {
+    setLastHands([]);
+    setPressedCell(null);
+    setDeniedCell(null);
+    setClearingCells(new Set());
+    setScorePopup(null);
+    setIsResolving(false);
+    setIsGameOver(false);
+    setScoreSubmitted(false);
+    setIsNewBest(false);
+    setBoardPulse(null);
+  }
+
+  function devSetCurrentCard() {
+    resetDevRuntimeState();
+    setScreen("game");
+    setCurrentCard(makeDevCard(devRank, devSuit));
+    setMessage(`Dev: Current card set to ${devRank}${suitSymbol(devSuit)}.`);
+  }
+
+  function devClearBoard() {
+    resetDevRuntimeState();
+    setScreen("game");
+    setBoard(createEmptyBoard());
+    setTurnsSinceHand(0);
+    setMessage("Dev: Board cleared.");
+  }
+
+  function devResetScore() {
+    resetDevRuntimeState();
+    setScore(0);
+    setCombo(0);
+    setTurnsSinceHand(0);
+    setMessage("Dev: Score reset.");
+  }
+
+  function devPrepareTripleA() {
+    const nextBoard = createEmptyBoard();
+    nextBoard[2][1] = makeDevCard("A", "club");
+    nextBoard[2][2] = makeDevCard("A", "diamond");
+
+    resetDevRuntimeState();
+    setScreen("game");
+    setBoard(nextBoard);
+    setCurrentCard(makeDevCard("A", "heart"));
+    setCombo(0);
+    setTurnsSinceHand(0);
+    setMessage("Dev: Place A next to A A to test Three Card.");
+  }
+
+  function devPrepareStraightA23() {
+    const nextBoard = createEmptyBoard();
+    nextBoard[2][1] = makeDevCard("A", "spade");
+    nextBoard[2][2] = makeDevCard("2", "heart");
+
+    resetDevRuntimeState();
+    setScreen("game");
+    setBoard(nextBoard);
+    setCurrentCard(makeDevCard("3", "diamond"));
+    setCombo(0);
+    setTurnsSinceHand(0);
+    setMessage("Dev: Place 3 next to A 2 to test Straight.");
+  }
+
+  function devPrepareStraightQKA() {
+    const nextBoard = createEmptyBoard();
+    nextBoard[2][1] = makeDevCard("Q", "spade");
+    nextBoard[2][2] = makeDevCard("K", "heart");
+
+    resetDevRuntimeState();
+    setScreen("game");
+    setBoard(nextBoard);
+    setCurrentCard(makeDevCard("A", "diamond"));
+    setCombo(0);
+    setTurnsSinceHand(0);
+    setMessage("Dev: Place A next to Q K to test Q K A Straight.");
+  }
+
+  function devPrepareFullHouse() {
+    const nextBoard = createEmptyBoard();
+    nextBoard[2][0] = makeDevCard("A", "club");
+    nextBoard[2][1] = makeDevCard("A", "diamond");
+    nextBoard[2][2] = makeDevCard("A", "heart");
+    nextBoard[2][3] = makeDevCard("2", "club");
+
+    resetDevRuntimeState();
+    setScreen("game");
+    setBoard(nextBoard);
+    setCurrentCard(makeDevCard("2", "diamond"));
+    setCombo(0);
+    setTurnsSinceHand(0);
+    setMessage("Dev: Place 2 after A A A 2 to test Full House.");
+  }
+
+  function devPrepareTwoPair() {
+    const nextBoard = createEmptyBoard();
+    nextBoard[2][1] = makeDevCard("K", "club");
+    nextBoard[2][2] = makeDevCard("K", "diamond");
+    nextBoard[2][3] = makeDevCard("7", "heart");
+
+    resetDevRuntimeState();
+    setScreen("game");
+    setBoard(nextBoard);
+    setCurrentCard(makeDevCard("7", "spade"));
+    setCombo(0);
+    setTurnsSinceHand(0);
+    setMessage("Dev: Place 7 after K K 7 to test Two Pair.");
   }
 
   if (!isReady) {
@@ -1160,6 +1472,33 @@ export default function Page() {
         </>
       )}
 
+
+      {isDebugMode ? (
+        <button
+          onClick={() => setDevModeOpen(true)}
+          className="fixed bottom-[max(18px,calc(env(safe-area-inset-bottom)+18px))] right-4 z-[45] select-none touch-manipulation rounded-2xl border border-[#D6B36A]/30 bg-[#111111]/90 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#D6B36A] shadow-[0_18px_55px_rgba(0,0,0,0.45)] backdrop-blur-xl transition hover:bg-[#181818] active:scale-[0.98]"
+        >
+          Dev Mode
+        </button>
+      ) : null}
+
+      {isDebugMode && devModeOpen ? (
+        <DevModePanel
+          devRank={devRank}
+          devSuit={devSuit}
+          onRankChange={setDevRank}
+          onSuitChange={setDevSuit}
+          onClose={() => setDevModeOpen(false)}
+          onSetCurrentCard={devSetCurrentCard}
+          onClearBoard={devClearBoard}
+          onResetScore={devResetScore}
+          onPrepareTripleA={devPrepareTripleA}
+          onPrepareStraightA23={devPrepareStraightA23}
+          onPrepareStraightQKA={devPrepareStraightQKA}
+          onPrepareFullHouse={devPrepareFullHouse}
+          onPrepareTwoPair={devPrepareTwoPair}
+        />
+      ) : null}
 
       {isLeaderboardOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
