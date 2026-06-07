@@ -1229,7 +1229,7 @@ export default function Page() {
             "flex min-h-0 flex-1 items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.025] p-1 backdrop-blur-xl transition duration-300",
           ].join(" ")}
         >
-          <div className="grid aspect-square h-full max-h-full max-w-full grid-cols-5 grid-rows-5 gap-3">
+          <div className="grid aspect-square w-full max-h-full max-w-full grid-cols-5 grid-rows-5 gap-3">
             {board.map((line, row) =>
               line.map((cell, col) => {
                 const key = `${row}-${col}`;
@@ -1244,7 +1244,7 @@ export default function Page() {
                     onClick={() => placeCard(row, col)}
                     disabled={isGameOver || isResolving}
                     className={[
-                      "group relative aspect-square select-none touch-manipulation overflow-hidden rounded-[22px] border transition duration-200",
+                      "group relative h-full w-full select-none touch-manipulation overflow-hidden rounded-[22px] border transition duration-200",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
                       cell ? "border-white/10" : "border-white/[0.075]",
                       isPressed ? "scale-[0.975] bg-white/[0.085]" : "",
@@ -1378,7 +1378,7 @@ export default function Page() {
                     onClick={() => placeCard(row, col)}
                     disabled={isGameOver || isResolving}
                     className={[
-                      "group relative aspect-square select-none touch-manipulation overflow-hidden rounded-[22px] border transition duration-200",
+                      "group relative h-full w-full select-none touch-manipulation overflow-hidden rounded-[22px] border transition duration-200",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
                       cell ? "border-white/10" : "border-white/[0.075]",
                       isPressed ? "scale-[0.975] bg-white/[0.085]" : "",
