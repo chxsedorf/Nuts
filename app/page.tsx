@@ -311,7 +311,7 @@ function CardView({
           "select-none [-webkit-user-drag:none]",
           large
             ? "h-full w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.34)]"
-            : "h-auto w-[92%] max-w-[92%] object-contain object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
+            : "h-auto w-full max-w-full object-contain object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
         ].join(" ")}
       />
     </div>
@@ -1225,8 +1225,6 @@ export default function Page() {
         <section
           className={[
             "flex min-h-0 flex-1 items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.025] p-2 backdrop-blur-xl transition duration-300",
-            boardPulse === "hand" ? "bg-[#D6B36A]/[0.025]" : "",
-            boardPulse === "clear" ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.035]" : "",
           ].join(" ")}
         >
           <div className="grid aspect-square h-[95%] max-h-[95%] max-w-full grid-cols-5 gap-2">
@@ -1249,10 +1247,8 @@ export default function Page() {
                       cell ? "border-white/10" : "border-white/[0.075]",
                       isPressed ? "scale-[0.965] bg-white/[0.085]" : "",
                       isDenied ? "translate-x-[1px] border-[#9F3F3F]/45 bg-[#9F3F3F]/[0.045]" : "",
-                      isClearing ? "scale-[0.94] opacity-35" : "",
-                      isHighlighted
-                        ? "border-[#D6B36A]/55 bg-[#D6B36A]/[0.035] shadow-[0_0_0_1px_rgba(214,179,106,0.18)]"
-                        : "",
+                      isClearing ? "opacity-35" : "",
+                      isHighlighted ? "" : "",
                     ].join(" ")}
                   >
                     {cell ? (
@@ -1349,8 +1345,6 @@ export default function Page() {
         <section
           className={[
             "flex h-full min-h-0 items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.025] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl transition duration-300",
-            boardPulse === "hand" ? "bg-[#D6B36A]/[0.025]" : "",
-            boardPulse === "clear" ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.035]" : "",
           ].join(" ")}
         >
           <div className="grid aspect-square h-[min(860px,calc(100svh-72px))] max-h-full max-w-full grid-cols-5 gap-3">
@@ -1373,10 +1367,8 @@ export default function Page() {
                       cell ? "border-white/10" : "border-white/[0.075]",
                       isPressed ? "scale-[0.975] bg-white/[0.085]" : "",
                       isDenied ? "translate-x-[1px] border-[#9F3F3F]/45 bg-[#9F3F3F]/[0.045]" : "",
-                      isClearing ? "scale-[0.94] opacity-35" : "",
-                      isHighlighted
-                        ? "border-[#D6B36A]/55 bg-[#D6B36A]/[0.035] shadow-[0_0_0_1px_rgba(214,179,106,0.18)]"
-                        : "",
+                      isClearing ? "opacity-35" : "",
+                      isHighlighted ? "" : "",
                     ].join(" ")}
                   >
                     <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100 bg-[radial-gradient(circle_at_top,#ffffff18,transparent_60%)]" />
