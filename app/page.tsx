@@ -1229,7 +1229,7 @@ export default function Page() {
             "flex min-h-0 flex-1 items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.025] p-1 backdrop-blur-xl transition duration-300",
           ].join(" ")}
         >
-          <div className="grid aspect-square h-full max-h-full max-w-full grid-cols-5 grid-rows-5 gap-2">
+          <div className="grid aspect-square h-full max-h-full max-w-full grid-cols-5 grid-rows-5 gap-3">
             {board.map((line, row) =>
               line.map((cell, col) => {
                 const key = `${row}-${col}`;
