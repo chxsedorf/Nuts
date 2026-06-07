@@ -638,7 +638,12 @@ export default function Page() {
   }
 
   async function submitScoreToLeaderboard(finalScore: number) {
-    if (!playerId || !playerName || finalScore <= 0) return;
+    if (!playerId || finalScore <= 0) return;
+
+    const latestPlayerName =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem(PLAYER_NAME_KEY) || playerName || "PLAYER"
+        : playerName || "PLAYER";
 
     try {
       await fetch("/api/score", {
@@ -648,7 +653,7 @@ export default function Page() {
         },
         body: JSON.stringify({
           playerId,
-          playerName,
+          playerName: normalizePlayerName(latestPlayerName).toUpperCase(),
           score: finalScore,
         }),
       });
@@ -657,14 +662,20 @@ export default function Page() {
     }
   }
 
-  function normalizePlayerName(value: string) {
-    const normalized = value
+  function sanitizePlayerNameInput(value: string) {
+    return value
       .replace(/[^a-zA-Z0-9 _-]/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
+      .replace(/\s{2,}/g, " ")
       .slice(0, 12);
+  }
 
+  function normalizePlayerName(value: string) {
+    const normalized = sanitizePlayerNameInput(value).trim();
     return normalized || "PLAYER";
+  }
+
+  function handlePlayerNameInput(value: string) {
+    setPlayerNameDraft(sanitizePlayerNameInput(value).toUpperCase());
   }
 
   function savePlayerName() {
@@ -1672,11 +1683,14 @@ export default function Page() {
                     <input
                       value={playerNameDraft}
                       onChange={(event) =>
-                        setPlayerNameDraft(event.currentTarget.value.toUpperCase())
+                        handlePlayerNameInput(event.currentTarget.value)
                       }
                       maxLength={12}
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
                       placeholder="PLAYER"
-                      className="mt-3 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-base font-black uppercase tracking-[0.12em] text-[#F5F1E8] outline-none transition placeholder:text-white/18 focus:border-[#D6B36A]/50"
+                      className="mt-3 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-base font-black text-[#F5F1E8] outline-none transition placeholder:text-white/18 focus:border-[#D6B36A]/50"
                       aria-label="Player name"
                     />
                     <div className="mt-4 flex items-center justify-between gap-3">
