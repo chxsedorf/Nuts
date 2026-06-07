@@ -696,11 +696,13 @@ export default function Page() {
   }, [isLeaderboardOpen, leaderboardPeriod]);
 
   useEffect(() => {
-    if (!isGameOver || score <= 0 || scoreSubmitted) return;
+    // Ranking only receives this player's local high score.
+    // Normal runs stay local and are not submitted.
+    if (!isGameOver || !isNewBest || score <= 0 || scoreSubmitted) return;
 
     setScoreSubmitted(true);
     void submitScoreToLeaderboard(score);
-  }, [isGameOver, score, scoreSubmitted, playerId, playerName]);
+  }, [isGameOver, isNewBest, score, scoreSubmitted, playerId, playerName]);
 
   const highlightedCells = useMemo(() => {
     const set = new Set<string>();
@@ -1242,17 +1244,30 @@ export default function Page() {
                     onClick={() => placeCard(row, col)}
                     disabled={isGameOver || isResolving}
                     className={[
-                      "group relative select-none touch-manipulation overflow-hidden rounded-[16px] border transition duration-200",
+                      "group relative select-none touch-manipulation overflow-hidden rounded-[16px] border transition-colors duration-150",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
                       cell ? "border-white/10" : "border-white/[0.075]",
-                      isPressed ? "scale-[0.965] bg-white/[0.085]" : "",
-                      isDenied ? "translate-x-[1px] border-[#9F3F3F]/45 bg-[#9F3F3F]/[0.045]" : "",
-                      isClearing ? "opacity-35" : "",
-                      isHighlighted ? "" : "",
                     ].join(" ")}
                   >
+                    {isPressed ? (
+                      <div className="pointer-events-none absolute inset-0 bg-white/[0.055]" />
+                    ) : null}
+
+                    {isDenied ? (
+                      <div className="pointer-events-none absolute inset-0 bg-[#9F3F3F]/[0.055]" />
+                    ) : null}
+
+                    {isHighlighted ? (
+                      <div className="pointer-events-none absolute inset-0 bg-[#D6B36A]/[0.035]" />
+                    ) : null}
+
                     {cell ? (
-                      <div className="absolute inset-[3px]">
+                      <div
+                        className={[
+                          "absolute inset-[3px] transition-opacity duration-200",
+                          isClearing ? "opacity-35" : "opacity-100",
+                        ].join(" ")}
+                      >
                         <CardView card={cell} />
                       </div>
                     ) : (
@@ -1436,47 +1451,90 @@ export default function Page() {
       </div>
 
       {isGameOver ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-[440px] rounded-[30px] border border-white/10 bg-[#121212] p-6 text-center shadow-[0_24px_90px_rgba(0,0,0,0.5)]">
-            <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-[#D6B36A]">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/65 px-4 backdrop-blur-md">
+          <div
+            className={[
+              "w-full max-w-[460px] rounded-[34px] border border-white/10 bg-[#111111] p-6 text-center",
+              "shadow-[0_28px_100px_rgba(0,0,0,0.6)]",
+              isNewBest ? "ring-1 ring-[#D6B36A]/25" : "",
+            ].join(" ")}
+          >
+            <p
+              className={[
+                "text-[10px] font-black uppercase tracking-[0.34em]",
+                isNewBest ? "text-[#D6B36A]" : "text-white/38",
+              ].join(" ")}
+            >
               {isNewBest ? "New Best" : "Run Complete"}
             </p>
-            <h2 className="mt-3 text-5xl font-black tracking-[-0.08em] text-[#F5F1E8]">
-              {score}
-            </h2>
-            <p className="mt-2 text-sm font-bold uppercase tracking-[0.18em] text-white/35">
-              Best Score {highScore}
-            </p>
 
-            {isNewBest ? (
-              <p className="mt-5 text-[10px] font-black uppercase tracking-[0.24em] text-[#D6B36A]">
-                New Best
+            <div className="mt-5 rounded-[26px] border border-white/10 bg-white/[0.035] px-5 py-6">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/32">
+                Score
               </p>
-            ) : null}
+              <h2 className="mt-2 text-6xl font-black tracking-[-0.09em] text-[#F5F1E8]">
+                {score.toLocaleString()}
+              </h2>
+
+              <div className="mt-5 h-px w-full bg-white/10" />
+
+              <div className="mt-4 flex items-center justify-between gap-4 text-left">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.24em] text-white/28">
+                    Best
+                  </p>
+                  <p className="mt-1 text-2xl font-black tracking-[-0.06em] text-white/72">
+                    {highScore.toLocaleString()}
+                  </p>
+                </div>
+
+                {isNewBest ? (
+                  <div className="rounded-2xl border border-[#D6B36A]/25 bg-[#D6B36A]/10 px-4 py-3 text-right">
+                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[#D6B36A]">
+                      Ranking Sent
+                    </p>
+                    <p className="mt-1 text-[10px] font-bold text-[#D6B36A]/70">
+                      High score only
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/32">
+                      Ranking
+                    </p>
+                    <p className="mt-1 text-[10px] font-bold text-white/42">
+                      Best score only
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
 
             <button
               onClick={resetGame}
-              className="mt-6 w-full select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black transition hover:bg-white active:scale-[0.99]"
+              className="mt-5 w-full select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black transition hover:bg-white active:scale-[0.99]"
             >
               Play Again
             </button>
 
-            <button
-              onClick={() => setIsLeaderboardOpen(true)}
-              className="mt-3 w-full select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/70 transition hover:bg-white/[0.075] active:scale-[0.99]"
-            >
-              Ranking
-            </button>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setIsLeaderboardOpen(true)}
+                className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-4 text-xs font-black uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/[0.075] active:scale-[0.99]"
+              >
+                Ranking
+              </button>
 
-            <button
-              onClick={() => {
-                setIsGameOver(false);
-                setScreen("home");
-              }}
-              className="mt-3 w-full select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/55 transition hover:bg-white/[0.065] active:scale-[0.99]"
-            >
-              Home
-            </button>
+              <button
+                onClick={() => {
+                  setIsGameOver(false);
+                  setScreen("home");
+                }}
+                className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-xs font-black uppercase tracking-[0.2em] text-white/55 transition hover:bg-white/[0.065] active:scale-[0.99]"
+              >
+                Home
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
