@@ -1108,7 +1108,16 @@ export default function Page() {
               NUTS
             </h1>
 
-            <div className="mt-8 w-full rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+            <div className="mt-6 w-full rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                Player
+              </p>
+              <p className="mt-2 truncate text-xl font-black uppercase tracking-[0.12em] text-[#F5F1E8]">
+                {playerName || "PLAYER"}
+              </p>
+            </div>
+
+            <div className="mt-3 w-full rounded-2xl border border-white/10 bg-white/[0.035] p-5">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
                 Best Score
               </p>
@@ -1134,7 +1143,7 @@ export default function Page() {
 
               <button
                 onClick={() => {
-                  setSettingsTab("rules");
+                  setSettingsTab("profile");
                   setIsSettingsOpen(true);
                 }}
                 className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/70 transition hover:bg-white/[0.075] active:scale-[0.99]"
