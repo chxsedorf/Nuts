@@ -311,7 +311,7 @@ function CardView({
           "select-none [-webkit-user-drag:none]",
           large
             ? "h-full w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.34)]"
-            : "h-[150%] w-auto max-w-none object-contain object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
+            : "h-auto w-[92%] max-w-[92%] object-contain object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
         ].join(" ")}
       />
     </div>
