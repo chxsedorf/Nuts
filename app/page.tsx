@@ -26,6 +26,12 @@ const RANKS: Rank[] = [
 type SoundType = "place" | "pair" | "clear" | "combo" | "deny" | "restart";
 type HapticType = "place" | "pair" | "clear" | "combo" | "deny" | "restart";
 type ScorePopup = { id: number; value: number; combo: number; label: string };
+type LeaderboardPeriod = "daily" | "monthly" | "all";
+type LeaderboardRow = {
+  player_name: string;
+  score: number;
+  created_at: string;
+};
 
 function createEmptyBoard(): Board {
   return Array.from({ length: 5 }, () =>
@@ -99,6 +105,8 @@ function hasEmptyCell(board: Board): boolean {
 }
 
 const HIGH_SCORE_KEY = "nuts-high-score";
+const PLAYER_ID_KEY = "nuts-player-id";
+const PLAYER_NAME_KEY = "nuts-player-name";
 
 const BALANCED_SCORE_TABLE: Record<HandType, number> = {
   ROYAL_STRAIGHT_FLUSH: 1200,
@@ -339,6 +347,14 @@ export default function Page() {
   const [clearingCells, setClearingCells] = useState<Set<string>>(() => new Set());
   const [scorePopup, setScorePopup] = useState<ScorePopup | null>(null);
   const [runStartPulse, setRunStartPulse] = useState(false);
+  const [playerId, setPlayerId] = useState("");
+  const [playerName, setPlayerName] = useState("");
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState<LeaderboardPeriod>("daily");
+  const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardRow[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState("");
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
 
   useEffect(() => {
     const newDeck = shuffle(createDeck());
@@ -357,6 +373,83 @@ export default function Page() {
       setHighScore(saved);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let savedPlayerId = window.localStorage.getItem(PLAYER_ID_KEY);
+    if (!savedPlayerId) {
+      savedPlayerId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `player-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      window.localStorage.setItem(PLAYER_ID_KEY, savedPlayerId);
+    }
+
+    let savedPlayerName = window.localStorage.getItem(PLAYER_NAME_KEY);
+    if (!savedPlayerName) {
+      savedPlayerName = `PLAYER ${savedPlayerId.slice(-4).toUpperCase()}`;
+      window.localStorage.setItem(PLAYER_NAME_KEY, savedPlayerName);
+    }
+
+    setPlayerId(savedPlayerId);
+    setPlayerName(savedPlayerName);
+  }, []);
+
+  async function loadLeaderboard(period: LeaderboardPeriod = leaderboardPeriod) {
+    setLeaderboardLoading(true);
+    setLeaderboardError("");
+
+    try {
+      const response = await fetch(`/api/leaderboard?period=${period}`, {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load leaderboard.");
+      }
+
+      const data = (await response.json()) as { rows?: LeaderboardRow[] };
+      setLeaderboardRows(data.rows ?? []);
+    } catch {
+      setLeaderboardError("Ranking is not available right now.");
+      setLeaderboardRows([]);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  }
+
+  async function submitScoreToLeaderboard(finalScore: number) {
+    if (!playerId || !playerName || finalScore <= 0) return;
+
+    try {
+      await fetch("/api/score", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playerId,
+          playerName,
+          score: finalScore,
+        }),
+      });
+    } catch {
+      // Ranking submission should never block local play.
+    }
+  }
+
+  useEffect(() => {
+    if (!isLeaderboardOpen) return;
+    void loadLeaderboard(leaderboardPeriod);
+  }, [isLeaderboardOpen, leaderboardPeriod]);
+
+  useEffect(() => {
+    if (!isGameOver || score <= 0 || scoreSubmitted) return;
+
+    setScoreSubmitted(true);
+    void submitScoreToLeaderboard(score);
+  }, [isGameOver, score, scoreSubmitted, playerId, playerName]);
 
   const highlightedCells = useMemo(() => {
     const set = new Set<string>();
@@ -420,6 +513,7 @@ export default function Page() {
     setMessage("New game.");
     setIsGameOver(false);
     setIsNewBest(false);
+    setScoreSubmitted(false);
     setPressedCell(null);
     setDeniedCell(null);
     setComboPulse(false);
@@ -678,6 +772,13 @@ export default function Page() {
                 className="select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.24em] text-black transition hover:bg-white active:scale-[0.99]"
               >
                 Play
+              </button>
+
+              <button
+                onClick={() => setIsLeaderboardOpen(true)}
+                className="select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/70 transition hover:bg-white/[0.075] active:scale-[0.99]"
+              >
+                Ranking
               </button>
 
               <button
@@ -947,12 +1048,23 @@ export default function Page() {
           </div>
 
           <button
+            onClick={() => setIsLeaderboardOpen(true)}
+            className={[
+              "mt-8 flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10",
+              "bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-[#F5F1E8]",
+              "transition hover:bg-white/[0.075] active:scale-[0.99]",
+            ].join(" ")}
+          >
+            Ranking
+          </button>
+
+          <button
             onClick={() => {
               setSettingsTab("rules");
               setIsSettingsOpen(true);
             }}
             className={[
-              "mt-8 flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10",
+              "mt-3 flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10",
               "bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-[#F5F1E8]",
               "transition hover:bg-white/[0.075] active:scale-[0.99]",
             ].join(" ")}
@@ -989,12 +1101,112 @@ export default function Page() {
             >
               Play Again
             </button>
+
+            <button
+              onClick={() => setIsLeaderboardOpen(true)}
+              className="mt-3 w-full select-none touch-manipulation rounded-2xl border border-white/10 bg-white/[0.045] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-white/70 transition hover:bg-white/[0.075] active:scale-[0.99]"
+            >
+              Ranking
+            </button>
           </div>
         </div>
       ) : null}
 
         </>
       )}
+
+
+      {isLeaderboardOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="flex max-h-[92svh] w-full max-w-[620px] flex-col rounded-[28px] border border-white/10 bg-[#121212] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.5)]">
+            <div className="flex shrink-0 items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#D6B36A]">
+                  Ranking
+                </p>
+                <h2 className="mt-2 text-3xl font-black tracking-[-0.06em] text-[#F5F1E8]">
+                  Leaderboard
+                </h2>
+              </div>
+
+              <button
+                onClick={() => setIsLeaderboardOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.045] text-xl font-black text-white/70 transition hover:bg-white/[0.08]"
+                aria-label="Close ranking"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-6 grid shrink-0 grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-1">
+              {[
+                { key: "daily", label: "Today" },
+                { key: "monthly", label: "Month" },
+                { key: "all", label: "All Time" },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => setLeaderboardPeriod(item.key as LeaderboardPeriod)}
+                  className={[
+                    "rounded-xl px-2 py-3 text-[10px] font-black uppercase tracking-[0.14em] transition sm:text-xs",
+                    leaderboardPeriod === item.key
+                      ? "bg-[#F5F1E8] text-black"
+                      : "text-white/45 hover:bg-white/[0.05] hover:text-white/75",
+                  ].join(" ")}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
+              {leaderboardLoading ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm font-bold uppercase tracking-[0.2em] text-white/35">
+                  Loading
+                </div>
+              ) : leaderboardError ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm leading-6 text-white/45">
+                  {leaderboardError}
+                </div>
+              ) : leaderboardRows.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm leading-6 text-white/45">
+                  No scores yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {leaderboardRows.map((row, index) => (
+                    <div
+                      key={`${row.player_name}-${row.score}-${row.created_at}-${index}`}
+                      className={[
+                        "grid grid-cols-[42px_1fr_auto] items-center gap-3 rounded-2xl border px-4 py-3",
+                        index === 0
+                          ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.055]"
+                          : "border-white/10 bg-white/[0.035]",
+                      ].join(" ")}
+                    >
+                      <p className="text-sm font-black text-[#D6B36A]">
+                        {index + 1}
+                      </p>
+                      <p className="truncate text-sm font-black uppercase tracking-[0.12em] text-white/70">
+                        {row.player_name}
+                      </p>
+                      <p className="text-lg font-black tracking-[-0.04em] text-[#F5F1E8]">
+                        {row.score}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 shrink-0 border-t border-white/10 pt-4">
+              <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-white/28">
+                {playerName || "PLAYER"}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isSettingsOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
@@ -1134,7 +1346,7 @@ export default function Page() {
                       Hand Score × Combo
                     </p>
                     <p className="mt-3 text-white/48">
-                      例：Straight 180点をx3で成立させると、540点入ります。
+                      例：Straight 160点をx3で成立させると、480点入ります。
                     </p>
                   </div>
                 </div>
@@ -1193,7 +1405,7 @@ export default function Page() {
                     現在のバージョンでは、入力フォーム、アカウント作成、位置情報取得、決済機能はありません。
                   </p>
                   <p>
-                    ハイスコアと効果音の音量設定は、お使いのブラウザ内のlocalStorageに保存されます。外部サーバーには送信されません。
+                    ハイスコア、プレイヤーID、効果音の音量設定は、お使いのブラウザ内のlocalStorageに保存されます。ランキング機能では、匿名プレイヤー名とスコアのみをサーバーへ送信します。
                   </p>
                   <p>
                     今後アクセス解析や広告を導入する場合は、必要な情報をこの画面または公開ページ上で明示します。
