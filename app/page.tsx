@@ -25,6 +25,7 @@ const RANKS: Rank[] = [
 
 type SoundType = "place" | "pair" | "clear" | "combo" | "deny" | "restart";
 type HapticType = "place" | "pair" | "clear" | "combo" | "deny" | "restart";
+type ScorePopup = { id: number; value: number; combo: number; label: string };
 
 function createEmptyBoard(): Board {
   return Array.from({ length: 5 }, () =>
@@ -74,6 +75,23 @@ function suitSymbol(suit: Suit): string {
 
 function isRedSuit(suit: Suit): boolean {
   return suit === "heart" || suit === "diamond";
+}
+
+function cardSuitCode(suit: Suit): string {
+  switch (suit) {
+    case "spade":
+      return "S";
+    case "heart":
+      return "H";
+    case "diamond":
+      return "D";
+    case "club":
+      return "C";
+  }
+}
+
+function cardImageSrc(card: Card): string {
+  return `/cards/${card.rank}${cardSuitCode(card.suit)}.png`;
 }
 
 function hasEmptyCell(board: Board): boolean {
@@ -259,62 +277,37 @@ function CardView({
   card: Card;
   large?: boolean;
 }) {
-  const red = isRedSuit(card.suit);
-
   return (
     <div
       className={[
-        "flex h-full w-full flex-col items-center justify-center rounded-[18px]",
-        "border border-black/10 bg-[#F5F1E8]",
-        "shadow-[0_8px_22px_rgba(0,0,0,0.14)]",
-        large ? "gap-4 p-5" : "gap-2 p-3",
+        "flex h-full w-full items-start justify-center overflow-hidden rounded-[18px]",
+        "bg-transparent",
       ].join(" ")}
     >
-      <span
+      <img
+        src={cardImageSrc(card)}
+        alt={`${card.rank} ${card.suit}`}
+        draggable={false}
         className={[
-          "font-black leading-none tracking-tight",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-          large ? "text-5xl" : "text-2xl",
+          "select-none [-webkit-user-drag:none]",
+          large
+            ? "h-full w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.34)]"
+            : "h-[158%] w-[116%] max-w-none object-cover object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.22)]",
         ].join(" ")}
-      >
-        {card.rank}
-      </span>
-
-      <span
-        className={[
-          "font-black leading-none",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-          large ? "text-6xl" : "text-3xl",
-        ].join(" ")}
-      >
-        {suitSymbol(card.suit)}
-      </span>
+      />
     </div>
   );
 }
 
 function MiniCardView({ card }: { card: Card }) {
-  const red = isRedSuit(card.suit);
-
   return (
-    <div className="flex h-16 w-12 flex-col items-center justify-center gap-1 rounded-xl border border-black/10 bg-[#F5F1E8] shadow-lg">
-      <span
-        className={[
-          "text-base font-black leading-none",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-        ].join(" ")}
-      >
-        {card.rank}
-      </span>
-
-      <span
-        className={[
-          "text-lg font-black leading-none",
-          red ? "text-[#9F3F3F]" : "text-[#111111]",
-        ].join(" ")}
-      >
-        {suitSymbol(card.suit)}
-      </span>
+    <div className="flex h-16 w-12 items-center justify-center overflow-hidden rounded-xl bg-transparent shadow-lg">
+      <img
+        src={cardImageSrc(card)}
+        alt={`${card.rank} ${card.suit}`}
+        draggable={false}
+        className="h-full w-full select-none object-contain [-webkit-user-drag:none]"
+      />
     </div>
   );
 }
@@ -342,6 +335,10 @@ export default function Page() {
   const [deniedCell, setDeniedCell] = useState<string | null>(null);
   const [comboPulse, setComboPulse] = useState(false);
   const [boardPulse, setBoardPulse] = useState<"hand" | "clear" | null>(null);
+  const [isResolving, setIsResolving] = useState(false);
+  const [clearingCells, setClearingCells] = useState<Set<string>>(() => new Set());
+  const [scorePopup, setScorePopup] = useState<ScorePopup | null>(null);
+  const [runStartPulse, setRunStartPulse] = useState(false);
 
   useEffect(() => {
     const newDeck = shuffle(createDeck());
@@ -427,10 +424,31 @@ export default function Page() {
     setDeniedCell(null);
     setComboPulse(false);
     setBoardPulse(null);
+    setIsResolving(false);
+    setClearingCells(new Set());
+    setScorePopup(null);
+    setRunStartPulse(true);
     setScreen("game");
+
+    window.setTimeout(() => {
+      setRunStartPulse(false);
+    }, 420);
+  }
+
+  function finishGameIfBoardFull(nextBoard: Board, finalScore: number) {
+    if (hasEmptyCell(nextBoard)) return;
+
+    setIsGameOver(true);
+    setMessage("Run Complete");
+
+    if (finalScore <= highScore) {
+      setIsNewBest(false);
+    }
   }
 
   function placeCard(row: number, col: number) {
+    if (isResolving) return;
+
     if (isGameOver) {
       sound.play("deny");
       haptics.play("deny");
@@ -480,20 +498,9 @@ export default function Page() {
       gainedScore += getBalancedScore(hand.type) * comboMultiplier;
     }
 
-    for (const hand of hands) {
-      if (!hand.shouldClear) continue;
-
-      for (const item of hand.cards) {
-        nextBoard[item.row][item.col] = null;
-      }
-    }
-
     let nextDeck = [...deck];
     let nextCard = nextDeck.shift() ?? null;
 
-    // Endless mode:
-    // When the draw pile runs out, quietly reshuffle a fresh 52-card deck.
-    // The game only ends when the board has no empty cells left.
     if (!nextCard) {
       const freshDeck = shuffle(createDeck());
       nextCard = freshDeck[0] ?? null;
@@ -501,7 +508,16 @@ export default function Page() {
     }
 
     const finalScore = score + gainedScore;
-    const shouldEndGame = !hasEmptyCell(nextBoard);
+    const hasClearHand = hands.some((hand) => hand.shouldClear);
+    const clearKeys = new Set<string>();
+
+    for (const hand of hands) {
+      if (!hand.shouldClear) continue;
+
+      for (const item of hand.cards) {
+        clearKeys.add(`${item.row}-${item.col}`);
+      }
+    }
 
     setBoard(nextBoard);
     setDeck(nextDeck);
@@ -511,6 +527,19 @@ export default function Page() {
     setTurnsSinceHand(nextTurnsSinceHand);
     setLastHands(hands);
 
+    if (gainedScore > 0) {
+      setScorePopup({
+        id: Date.now(),
+        value: gainedScore,
+        combo: Math.max(1, nextCombo),
+        label: hands.map((hand) => handName(hand.type)).join(" + "),
+      });
+
+      window.setTimeout(() => {
+        setScorePopup((current) => (current?.id ? null : current));
+      }, 900);
+    }
+
     if (finalScore > highScore) {
       setHighScore(finalScore);
       setIsNewBest(true);
@@ -519,17 +548,7 @@ export default function Page() {
       }
     }
 
-    if (shouldEndGame) {
-      setIsGameOver(true);
-      setMessage("Game Over");
-
-      if (finalScore <= highScore) {
-        setIsNewBest(false);
-      }
-    }
-
     if (hands.length > 0) {
-      const hasClearHand = hands.some((hand) => hand.shouldClear);
       setMessage(hands.map((hand) => handName(hand.type)).join(" + "));
       flashBoard(hasClearHand ? "clear" : "hand");
 
@@ -546,8 +565,32 @@ export default function Page() {
           haptics.play("combo");
         }, 155);
       }
-    } else if (!shouldEndGame) {
+    } else {
       setMessage("No hand.");
+    }
+
+    if (hasClearHand) {
+      setIsResolving(true);
+      setClearingCells(clearKeys);
+
+      window.setTimeout(() => {
+        setBoard((currentBoard) => {
+          const clearedBoard = currentBoard.map((line) => [...line]);
+
+          for (const key of clearKeys) {
+            const [clearRow, clearCol] = key.split("-").map(Number);
+            clearedBoard[clearRow][clearCol] = null;
+          }
+
+          finishGameIfBoardFull(clearedBoard, finalScore);
+          return clearedBoard;
+        });
+
+        setClearingCells(new Set());
+        setIsResolving(false);
+      }, 430);
+    } else {
+      finishGameIfBoardFull(nextBoard, finalScore);
     }
   }
 
@@ -574,6 +617,29 @@ export default function Page() {
     >
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#28221A_0%,transparent_34%),linear-gradient(180deg,#090909_0%,#101010_100%)]" />
       <div className="pointer-events-none fixed inset-0 opacity-[0.04] [background-image:linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] [background-size:48px_48px]" />
+      <style>{`
+        @keyframes nutsScoreFloat {
+          0% { opacity: 0; transform: translate(-50%, 10px) scale(0.96); }
+          16% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+          72% { opacity: 1; transform: translate(-50%, -6px) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -16px) scale(0.98); }
+        }
+      `}</style>
+
+      {scorePopup ? (
+        <div
+          key={scorePopup.id}
+          className="pointer-events-none fixed left-1/2 top-[46%] z-30 rounded-2xl border border-[#D6B36A]/20 bg-black/45 px-5 py-3 text-center shadow-[0_18px_70px_rgba(0,0,0,0.35)] backdrop-blur-md"
+          style={{ animation: "nutsScoreFloat 900ms ease-out forwards" }}
+        >
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/35">
+            {scorePopup.label}
+          </p>
+          <p className="mt-1 text-2xl font-black tracking-[-0.06em] text-[#D6B36A]">
+            +{scorePopup.value}{scorePopup.combo >= 2 ? ` ×${scorePopup.combo}` : ""}
+          </p>
+        </div>
+      ) : null}
 
       {screen === "home" ? (
         <div
@@ -629,7 +695,7 @@ export default function Page() {
       ) : (
         <>
       {/* Mobile layout */}
-      <div className="relative flex h-[100dvh] flex-col gap-3 px-3 lg:hidden"
+      <div className={["relative flex h-[100dvh] flex-col gap-3 px-3 transition duration-500 lg:hidden", runStartPulse ? "opacity-0 scale-[0.99]" : "opacity-100 scale-100"].join(" ")}
         style={{
           paddingTop: "max(18px, calc(env(safe-area-inset-top) + 16px))",
           paddingBottom: "max(12px, calc(env(safe-area-inset-bottom) + 12px))",
@@ -698,25 +764,27 @@ export default function Page() {
                 const isHighlighted = highlightedCells.has(key);
                 const isPressed = pressedCell === key;
                 const isDenied = deniedCell === key;
+                const isClearing = clearingCells.has(key);
 
                 return (
                   <button
                     key={key}
                     onClick={() => placeCard(row, col)}
-                    disabled={isGameOver}
+                    disabled={isGameOver || isResolving}
                     className={[
                       "group relative select-none touch-manipulation overflow-hidden rounded-[16px] border transition duration-200",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
                       cell ? "border-white/10" : "border-white/[0.075]",
                       isPressed ? "scale-[0.965] bg-white/[0.085]" : "",
                       isDenied ? "translate-x-[1px] border-[#9F3F3F]/45 bg-[#9F3F3F]/[0.045]" : "",
+                      isClearing ? "scale-[0.94] opacity-35" : "",
                       isHighlighted
                         ? "border-[#D6B36A]/55 bg-[#D6B36A]/[0.035] shadow-[0_0_0_1px_rgba(214,179,106,0.18)]"
                         : "",
                     ].join(" ")}
                   >
                     {cell ? (
-                      <div className="absolute inset-1">
+                      <div className="absolute inset-[2px]">
                         <CardView card={cell} />
                       </div>
                     ) : (
@@ -749,7 +817,7 @@ export default function Page() {
       </div>
 
       {/* Desktop layout */}
-      <div className="relative mx-auto hidden h-[calc(100svh-24px)] w-full max-w-none grid-cols-[280px_minmax(760px,1fr)_300px] gap-3 lg:grid">
+      <div className={["relative mx-auto hidden h-[calc(100svh-24px)] w-full max-w-none grid-cols-[280px_minmax(760px,1fr)_300px] gap-3 transition duration-500 lg:grid", runStartPulse ? "opacity-0 scale-[0.99]" : "opacity-100 scale-100"].join(" ")}>
         <aside className="rounded-[30px] border border-white/10 bg-white/[0.035] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur-xl">
           <div>
             <h1 className="text-5xl font-black tracking-[-0.08em] text-[#F5F1E8]">
@@ -820,18 +888,20 @@ export default function Page() {
                 const isHighlighted = highlightedCells.has(key);
                 const isPressed = pressedCell === key;
                 const isDenied = deniedCell === key;
+                const isClearing = clearingCells.has(key);
 
                 return (
                   <button
                     key={key}
                     onClick={() => placeCard(row, col)}
-                    disabled={isGameOver}
+                    disabled={isGameOver || isResolving}
                     className={[
                       "group relative select-none touch-manipulation overflow-hidden rounded-[22px] border transition duration-200",
                       "bg-white/[0.045] hover:bg-white/[0.075]",
                       cell ? "border-white/10" : "border-white/[0.075]",
                       isPressed ? "scale-[0.975] bg-white/[0.085]" : "",
                       isDenied ? "translate-x-[1px] border-[#9F3F3F]/45 bg-[#9F3F3F]/[0.045]" : "",
+                      isClearing ? "scale-[0.94] opacity-35" : "",
                       isHighlighted
                         ? "border-[#D6B36A]/55 bg-[#D6B36A]/[0.035] shadow-[0_0_0_1px_rgba(214,179,106,0.18)]"
                         : "",
@@ -840,7 +910,7 @@ export default function Page() {
                     <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100 bg-[radial-gradient(circle_at_top,#ffffff18,transparent_60%)]" />
 
                     {cell ? (
-                      <div className="absolute inset-1.5">
+                      <div className="absolute inset-[3px]">
                         <CardView card={cell} />
                       </div>
                     ) : (
@@ -898,7 +968,7 @@ export default function Page() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="w-full max-w-[440px] rounded-[30px] border border-white/10 bg-[#121212] p-6 text-center shadow-[0_24px_90px_rgba(0,0,0,0.5)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-[#D6B36A]">
-              {isNewBest ? "New Best" : "Game Over"}
+              {isNewBest ? "New Best" : "Run Complete"}
             </p>
             <h2 className="mt-3 text-5xl font-black tracking-[-0.08em] text-[#F5F1E8]">
               {score}
@@ -908,18 +978,16 @@ export default function Page() {
             </p>
 
             {isNewBest ? (
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-sm leading-6 text-white/50">
-                  最高スコアを更新しました。もう一度走って、さらに上を狙いましょう。
-                </p>
-              </div>
+              <p className="mt-5 text-[10px] font-black uppercase tracking-[0.24em] text-[#D6B36A]">
+                New Best
+              </p>
             ) : null}
 
             <button
               onClick={resetGame}
               className="mt-6 w-full select-none touch-manipulation rounded-2xl bg-[#F5F1E8] px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-black transition hover:bg-white active:scale-[0.99]"
             >
-              Restart
+              Play Again
             </button>
           </div>
         </div>
