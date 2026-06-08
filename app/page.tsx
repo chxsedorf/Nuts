@@ -560,6 +560,7 @@ export default function Page() {
   const [leaderboardError, setLeaderboardError] = useState("");
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const submittedHighScoreRef = useRef(0);
+  const runStartHighScoreRef = useRef(0);
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [devModeOpen, setDevModeOpen] = useState(false);
   const [devRank, setDevRank] = useState<Rank>("A");
@@ -590,6 +591,7 @@ export default function Page() {
     if (Number.isFinite(saved) && saved > 0) {
       setHighScore(saved);
       submittedHighScoreRef.current = saved;
+      runStartHighScoreRef.current = saved;
     }
   }, []);
 
@@ -664,7 +666,7 @@ export default function Page() {
     }
   }
 
-  function updateLocalHighScoreAndSubmit(finalScore: number, previousHighScore: number) {
+  function updateLocalHighScore(finalScore: number, previousHighScore: number) {
     if (finalScore <= previousHighScore) return;
 
     setHighScore(finalScore);
@@ -674,17 +676,8 @@ export default function Page() {
       window.localStorage.setItem(HIGH_SCORE_KEY, String(finalScore));
     }
 
-    // Send immediately when the local best is updated.
-    // The API still keeps only this player's highest score, so lower or duplicate scores will not pollute Ranking.
-    if (finalScore > submittedHighScoreRef.current) {
-      submittedHighScoreRef.current = finalScore;
-      setScoreSubmitted(true);
-      void submitScoreToLeaderboard(finalScore).then(() => {
-        if (isLeaderboardOpen) {
-          void loadLeaderboard(leaderboardPeriod);
-        }
-      });
-    }
+    // Ranking submission is intentionally delayed until the run ends.
+    // This prevents intermediate score updates from appearing in Ranking.
   }
 
   function sanitizePlayerNameInput(value: string) {
@@ -721,13 +714,15 @@ export default function Page() {
   }, [isLeaderboardOpen, leaderboardPeriod]);
 
   useEffect(() => {
-    // Backup submit at run end. Usually the score is already submitted immediately when New Best appears.
-    if (!isGameOver || !isNewBest || score <= 0 || scoreSubmitted) return;
+    // Backup submit at run end only.
+    // This exists only in case the run-complete branch did not submit for some reason.
+    if (!isGameOver || score <= 0 || scoreSubmitted) return;
+    if (score <= runStartHighScoreRef.current) return;
 
     setScoreSubmitted(true);
     submittedHighScoreRef.current = Math.max(submittedHighScoreRef.current, score);
     void submitScoreToLeaderboard(score);
-  }, [isGameOver, isNewBest, score, scoreSubmitted, playerId, playerName]);
+  }, [isGameOver, score, scoreSubmitted, playerId, playerName]);
 
   const highlightedCells = useMemo(() => {
     const set = new Set<string>();
@@ -781,6 +776,8 @@ export default function Page() {
 
     const newDeck = shuffle(createDeck());
 
+    runStartHighScoreRef.current = highScore;
+
     setBoard(createEmptyBoard());
     setDeck(newDeck.slice(1));
     setCurrentCard(newDeck[0] ?? null);
@@ -810,11 +807,21 @@ export default function Page() {
   function finishGameIfBoardFull(nextBoard: Board, finalScore: number) {
     if (hasEmptyCell(nextBoard)) return;
 
+    const finalIsNewBest = finalScore > runStartHighScoreRef.current;
+
     setIsGameOver(true);
     setMessage("Run Complete");
+    setIsNewBest(finalIsNewBest);
 
-    if (finalScore <= highScore) {
-      setIsNewBest(false);
+    if (finalIsNewBest && finalScore > 0 && !scoreSubmitted) {
+      setScoreSubmitted(true);
+      submittedHighScoreRef.current = Math.max(submittedHighScoreRef.current, finalScore);
+
+      void submitScoreToLeaderboard(finalScore).then(() => {
+        if (isLeaderboardOpen) {
+          void loadLeaderboard(leaderboardPeriod);
+        }
+      });
     }
   }
 
@@ -914,7 +921,7 @@ export default function Page() {
       }, 900);
     }
 
-    updateLocalHighScoreAndSubmit(finalScore, highScore);
+    updateLocalHighScore(finalScore, highScore);
 
     if (hands.length > 0) {
       setMessage(hands.map((hand) => handName(hand.type)).join(" + "));
