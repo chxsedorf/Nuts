@@ -96,8 +96,10 @@ function cardSuitCode(suit: Suit): string {
   }
 }
 
+const CARD_ASSET_VERSION = "20260608-dev-card-fix";
+
 function cardImageSrc(card: Card): string {
-  return `/cards/${card.rank}${cardSuitCode(card.suit)}.png`;
+  return `/cards/${card.rank}${cardSuitCode(card.suit)}.png?v=${CARD_ASSET_VERSION}`;
 }
 
 function preloadCardImages() {
@@ -106,7 +108,7 @@ function preloadCardImages() {
   for (const suit of SUITS) {
     for (const rank of RANKS) {
       const image = new Image();
-      image.src = `/cards/${rank}${cardSuitCode(suit)}.png`;
+      image.src = `/cards/${rank}${cardSuitCode(suit)}.png?v=${CARD_ASSET_VERSION}`;
     }
   }
 }
@@ -981,8 +983,36 @@ export default function Page() {
 
   function devPrepareTripleA() {
     const nextBoard = createEmptyBoard();
-    nextBoard[2][1] = makeDevCard("A", "club");
-    nextBoard[2][2] = makeDevCard("A", "diamond");
+    nextBoard[2][1] = makeDevCard("A", "spade");
+    nextBoard[2][2] = makeDevCard("A", "heart");
+
+    resetDevRuntimeState();
+    setScreen("game");
+    setBoard(nextBoard);
+    setCurrentCard(makeDevCard("A", "club"));
+    setCombo(0);
+    setTurnsSinceHand(0);
+    setMessage("Dev: Place A♣ next to A♠ A♥ to test Three Card.");
+  }
+
+  function devPrepareStraightA23() {
+    const nextBoard = createEmptyBoard();
+    nextBoard[2][1] = makeDevCard("A", "spade");
+    nextBoard[2][2] = makeDevCard("2", "club");
+
+    resetDevRuntimeState();
+    setScreen("game");
+    setBoard(nextBoard);
+    setCurrentCard(makeDevCard("3", "heart"));
+    setCombo(0);
+    setTurnsSinceHand(0);
+    setMessage("Dev: Place 3♥ next to A♠ 2♣ to test A 2 3 Straight.");
+  }
+
+  function devPrepareStraightQKA() {
+    const nextBoard = createEmptyBoard();
+    nextBoard[2][1] = makeDevCard("Q", "spade");
+    nextBoard[2][2] = makeDevCard("K", "club");
 
     resetDevRuntimeState();
     setScreen("game");
@@ -990,57 +1020,29 @@ export default function Page() {
     setCurrentCard(makeDevCard("A", "heart"));
     setCombo(0);
     setTurnsSinceHand(0);
-    setMessage("Dev: Place A next to A A to test Three Card.");
-  }
-
-  function devPrepareStraightA23() {
-    const nextBoard = createEmptyBoard();
-    nextBoard[2][1] = makeDevCard("A", "spade");
-    nextBoard[2][2] = makeDevCard("2", "heart");
-
-    resetDevRuntimeState();
-    setScreen("game");
-    setBoard(nextBoard);
-    setCurrentCard(makeDevCard("3", "diamond"));
-    setCombo(0);
-    setTurnsSinceHand(0);
-    setMessage("Dev: Place 3 next to A 2 to test Straight.");
-  }
-
-  function devPrepareStraightQKA() {
-    const nextBoard = createEmptyBoard();
-    nextBoard[2][1] = makeDevCard("Q", "spade");
-    nextBoard[2][2] = makeDevCard("K", "heart");
-
-    resetDevRuntimeState();
-    setScreen("game");
-    setBoard(nextBoard);
-    setCurrentCard(makeDevCard("A", "diamond"));
-    setCombo(0);
-    setTurnsSinceHand(0);
-    setMessage("Dev: Place A next to Q K to test Q K A Straight.");
+    setMessage("Dev: Place A♥ next to Q♠ K♣ to test Q K A Straight.");
   }
 
   function devPrepareFullHouse() {
     const nextBoard = createEmptyBoard();
-    nextBoard[2][0] = makeDevCard("A", "club");
-    nextBoard[2][1] = makeDevCard("A", "diamond");
-    nextBoard[2][2] = makeDevCard("A", "heart");
-    nextBoard[2][3] = makeDevCard("2", "club");
+    nextBoard[2][0] = makeDevCard("A", "spade");
+    nextBoard[2][1] = makeDevCard("A", "heart");
+    nextBoard[2][2] = makeDevCard("A", "club");
+    nextBoard[2][3] = makeDevCard("2", "spade");
 
     resetDevRuntimeState();
     setScreen("game");
     setBoard(nextBoard);
-    setCurrentCard(makeDevCard("2", "diamond"));
+    setCurrentCard(makeDevCard("2", "heart"));
     setCombo(0);
     setTurnsSinceHand(0);
-    setMessage("Dev: Place 2 after A A A 2 to test Full House.");
+    setMessage("Dev: Place 2♥ after A♠ A♥ A♣ 2♠ to test Full House.");
   }
 
   function devPrepareTwoPair() {
     const nextBoard = createEmptyBoard();
-    nextBoard[2][1] = makeDevCard("K", "club");
-    nextBoard[2][2] = makeDevCard("K", "diamond");
+    nextBoard[2][1] = makeDevCard("K", "spade");
+    nextBoard[2][2] = makeDevCard("K", "club");
     nextBoard[2][3] = makeDevCard("7", "heart");
 
     resetDevRuntimeState();
@@ -1049,7 +1051,7 @@ export default function Page() {
     setCurrentCard(makeDevCard("7", "spade"));
     setCombo(0);
     setTurnsSinceHand(0);
-    setMessage("Dev: Place 7 after K K 7 to test Two Pair.");
+    setMessage("Dev: Place 7♠ after K♠ K♣ 7♥ to test Two Pair.");
   }
 
   if (!isReady) {
