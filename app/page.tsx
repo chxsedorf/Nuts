@@ -559,6 +559,7 @@ export default function Page() {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState("");
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const submittedHighScoreRef = useRef(0);
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [devModeOpen, setDevModeOpen] = useState(false);
   const [devRank, setDevRank] = useState<Rank>("A");
@@ -588,6 +589,7 @@ export default function Page() {
     const saved = Number(window.localStorage.getItem(HIGH_SCORE_KEY) ?? "0");
     if (Number.isFinite(saved) && saved > 0) {
       setHighScore(saved);
+      submittedHighScoreRef.current = saved;
     }
   }, []);
 
@@ -662,6 +664,29 @@ export default function Page() {
     }
   }
 
+  function updateLocalHighScoreAndSubmit(finalScore: number, previousHighScore: number) {
+    if (finalScore <= previousHighScore) return;
+
+    setHighScore(finalScore);
+    setIsNewBest(true);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(HIGH_SCORE_KEY, String(finalScore));
+    }
+
+    // Send immediately when the local best is updated.
+    // The API still keeps only this player's highest score, so lower or duplicate scores will not pollute Ranking.
+    if (finalScore > submittedHighScoreRef.current) {
+      submittedHighScoreRef.current = finalScore;
+      setScoreSubmitted(true);
+      void submitScoreToLeaderboard(finalScore).then(() => {
+        if (isLeaderboardOpen) {
+          void loadLeaderboard(leaderboardPeriod);
+        }
+      });
+    }
+  }
+
   function sanitizePlayerNameInput(value: string) {
     return value
       .replace(/[^a-zA-Z0-9 _-]/g, "")
@@ -696,11 +721,11 @@ export default function Page() {
   }, [isLeaderboardOpen, leaderboardPeriod]);
 
   useEffect(() => {
-    // Ranking only receives this player's local high score.
-    // Normal runs stay local and are not submitted.
+    // Backup submit at run end. Usually the score is already submitted immediately when New Best appears.
     if (!isGameOver || !isNewBest || score <= 0 || scoreSubmitted) return;
 
     setScoreSubmitted(true);
+    submittedHighScoreRef.current = Math.max(submittedHighScoreRef.current, score);
     void submitScoreToLeaderboard(score);
   }, [isGameOver, isNewBest, score, scoreSubmitted, playerId, playerName]);
 
@@ -889,13 +914,7 @@ export default function Page() {
       }, 900);
     }
 
-    if (finalScore > highScore) {
-      setHighScore(finalScore);
-      setIsNewBest(true);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(HIGH_SCORE_KEY, String(finalScore));
-      }
-    }
+    updateLocalHighScoreAndSubmit(finalScore, highScore);
 
     if (hands.length > 0) {
       setMessage(hands.map((hand) => handName(hand.type)).join(" + "));
