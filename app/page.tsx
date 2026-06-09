@@ -553,6 +553,8 @@ export default function Page() {
   const [playerId, setPlayerId] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [playerNameDraft, setPlayerNameDraft] = useState("");
+  const [playerNameError, setPlayerNameError] = useState("");
+  const [isPlayerNameSaving, setIsPlayerNameSaving] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<LeaderboardPeriod>("daily");
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardRow[]>([]);
@@ -693,19 +695,64 @@ export default function Page() {
   }
 
   function handlePlayerNameInput(value: string) {
+    setPlayerNameError("");
     setPlayerNameDraft(sanitizePlayerNameInput(value).toUpperCase());
   }
 
-  function savePlayerName() {
+  async function savePlayerName() {
     const nextName = normalizePlayerName(playerNameDraft).toUpperCase();
-    setPlayerName(nextName);
-    setPlayerNameDraft(nextName);
 
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(PLAYER_NAME_KEY, nextName);
+    if (!playerId) {
+      setPlayerNameError("Player ID is not ready yet.");
+      return;
     }
 
-    setMessage("Name saved.");
+    setPlayerNameError("");
+    setIsPlayerNameSaving(true);
+
+    try {
+      const response = await fetch("/api/player-name", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playerId,
+          playerName: nextName,
+        }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !data.ok) {
+        const errorMessage =
+          data.error === "name_taken"
+            ? "This name is already used. Choose another name."
+            : data.error || "Could not save name.";
+        setPlayerNameError(errorMessage);
+        return;
+      }
+
+      setPlayerName(nextName);
+      setPlayerNameDraft(nextName);
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(PLAYER_NAME_KEY, nextName);
+      }
+
+      setMessage("Name saved.");
+
+      if (isLeaderboardOpen) {
+        void loadLeaderboard(leaderboardPeriod);
+      }
+    } catch {
+      setPlayerNameError("Could not save name.");
+    } finally {
+      setIsPlayerNameSaving(false);
+    }
   }
 
   useEffect(() => {
@@ -1749,7 +1796,7 @@ export default function Page() {
                       Player Name
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-white/50">
-                      ランキングに表示する名前を登録できます。英数字・スペース・_・- のみ、最大12文字です。
+                      ランキングに表示する名前を登録できます。他のプレイヤーと同じ名前は使えません。英数字・スペース・_・- のみ、最大12文字です。
                     </p>
                   </div>
 
@@ -1775,17 +1822,23 @@ export default function Page() {
                         Current: {playerName || "PLAYER"}
                       </p>
                       <button
-                        onClick={savePlayerName}
-                        className="select-none touch-manipulation rounded-xl bg-[#F5F1E8] px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-black transition hover:bg-white active:scale-[0.99]"
+                        onClick={() => void savePlayerName()}
+                        disabled={isPlayerNameSaving}
+                        className="select-none touch-manipulation rounded-xl bg-[#F5F1E8] px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-black transition hover:bg-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
                       >
-                        Save
+                        {isPlayerNameSaving ? "Saving" : "Save"}
                       </button>
                     </div>
+                    {playerNameError ? (
+                      <p className="mt-3 text-xs font-bold text-[#E2A1A1]">
+                        {playerNameError}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-7 text-white/50">
                     <p>
-                      保存した名前はこの端末のlocalStorageに保存され、次回以降のスコア送信時に使われます。
+                      保存した名前はこの端末に保存され、ランキング上の過去スコア名も同時に更新されます。
                     </p>
                   </div>
                 </div>

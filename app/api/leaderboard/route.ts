@@ -2,18 +2,22 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 type Period = "daily" | "monthly" | "all";
+type SupabaseScoreRow = {
+  player_id: string;
+  player_name: string;
+  score: number;
+  created_at: string;
+};
 
 function createSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !serviceRoleKey) {
     throw new Error("Supabase environment variables are missing.");
   }
 
-  return createClient(supabaseUrl, supabaseKey, {
+  return createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       persistSession: false,
     },
@@ -42,17 +46,17 @@ function getJstPeriodStart(period: Period): string | null {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const periodParam = searchParams.get("period");
+    const periodParam = searchParams.get("period") ?? searchParams.get("range");
     const period: Period =
       periodParam === "monthly" || periodParam === "all" ? periodParam : "daily";
 
     const supabase = createSupabaseClient();
     let query = supabase
       .from("nuts_scores")
-      .select("player_name, score, created_at")
+      .select("player_id, player_name, score, created_at")
       .order("score", { ascending: false })
       .order("created_at", { ascending: true })
-      .limit(20);
+      .limit(200);
 
     const start = getJstPeriodStart(period);
     if (start) {
@@ -62,12 +66,33 @@ export async function GET(request: Request) {
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ rows: data ?? [] });
+    const bestByPlayer = new Map<string, SupabaseScoreRow>();
+
+    for (const row of (data ?? []) as SupabaseScoreRow[]) {
+      const existing = bestByPlayer.get(row.player_id);
+      if (!existing || row.score > existing.score) {
+        bestByPlayer.set(row.player_id, row);
+      }
+    }
+
+    const rows = Array.from(bestByPlayer.values())
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      })
+      .slice(0, 20)
+      .map(({ player_name, score, created_at }) => ({
+        player_name,
+        score,
+        created_at,
+      }));
+
+    return NextResponse.json({ ok: true, rows });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
