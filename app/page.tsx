@@ -28,9 +28,16 @@ type HapticType = "place" | "pair" | "clear" | "combo" | "deny" | "restart";
 type ScorePopup = { id: number; value: number; combo: number; label: string };
 type LeaderboardPeriod = "daily" | "monthly" | "all";
 type LeaderboardRow = {
+  rank: number;
   player_name: string;
   score: number;
   created_at: string;
+};
+type LeaderboardMeta = {
+  totalPlayers: number;
+  myRank: number | null;
+  myScore: number | null;
+  myPlayerName: string | null;
 };
 
 function createEmptyBoard(): Board {
@@ -558,6 +565,12 @@ export default function Page() {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<LeaderboardPeriod>("daily");
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardRow[]>([]);
+  const [leaderboardMeta, setLeaderboardMeta] = useState<LeaderboardMeta>({
+    totalPlayers: 0,
+    myRank: null,
+    myScore: null,
+    myPlayerName: null,
+  });
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState("");
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
@@ -625,7 +638,10 @@ export default function Page() {
     setLeaderboardError("");
 
     try {
-      const response = await fetch(`/api/leaderboard?range=${period}`, {
+      const params = new URLSearchParams({ range: period });
+      if (playerId) params.set("playerId", playerId);
+
+      const response = await fetch(`/api/leaderboard?${params.toString()}`, {
         cache: "no-store",
       });
 
@@ -633,11 +649,29 @@ export default function Page() {
         throw new Error("Failed to load leaderboard.");
       }
 
-      const data = (await response.json()) as { rows?: LeaderboardRow[] };
+      const data = (await response.json()) as {
+        rows?: LeaderboardRow[];
+        totalPlayers?: number;
+        myRank?: number | null;
+        myScore?: number | null;
+        myPlayerName?: string | null;
+      };
       setLeaderboardRows(data.rows ?? []);
+      setLeaderboardMeta({
+        totalPlayers: data.totalPlayers ?? 0,
+        myRank: data.myRank ?? null,
+        myScore: data.myScore ?? null,
+        myPlayerName: data.myPlayerName ?? null,
+      });
     } catch {
       setLeaderboardError("Ranking is not available right now.");
       setLeaderboardRows([]);
+      setLeaderboardMeta({
+        totalPlayers: 0,
+        myRank: null,
+        myScore: null,
+        myPlayerName: null,
+      });
     } finally {
       setLeaderboardLoading(false);
     }
@@ -762,9 +796,9 @@ export default function Page() {
 
   useEffect(() => {
     // Backup submit at run end only.
-    // This exists only in case the run-complete branch did not submit for some reason.
+    // Every final score is stored so Today / Month rankings can update
+    // even when the score is below the player's all-time best.
     if (!isGameOver || score <= 0 || scoreSubmitted) return;
-    if (score <= runStartHighScoreRef.current) return;
 
     setScoreSubmitted(true);
     submittedHighScoreRef.current = Math.max(submittedHighScoreRef.current, score);
@@ -860,7 +894,7 @@ export default function Page() {
     setMessage("Run Complete");
     setIsNewBest(finalIsNewBest);
 
-    if (finalIsNewBest && finalScore > 0 && !scoreSubmitted) {
+    if (finalScore > 0 && !scoreSubmitted) {
       setScoreSubmitted(true);
       submittedHighScoreRef.current = Math.max(submittedHighScoreRef.current, finalScore);
 
@@ -1687,6 +1721,41 @@ export default function Page() {
               ))}
             </div>
 
+            <div className="mt-4 grid shrink-0 grid-cols-2 gap-2">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3">
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/30">
+                  Players
+                </p>
+                <p className="mt-1 text-xl font-black tracking-[-0.05em] text-[#F5F1E8]">
+                  {leaderboardMeta.totalPlayers.toLocaleString()}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#D6B36A]/20 bg-[#D6B36A]/[0.055] px-4 py-3">
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#D6B36A]/70">
+                  Your Rank
+                </p>
+                <p className="mt-1 text-xl font-black tracking-[-0.05em] text-[#F5F1E8]">
+                  {leaderboardMeta.myRank
+                    ? `#${leaderboardMeta.myRank.toLocaleString()}`
+                    : "—"}
+                </p>
+              </div>
+            </div>
+
+            {leaderboardMeta.myRank && leaderboardMeta.myScore ? (
+              <div className="mt-2 shrink-0 rounded-2xl border border-[#D6B36A]/20 bg-[#D6B36A]/[0.045] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="truncate text-[11px] font-black uppercase tracking-[0.14em] text-[#D6B36A]/80">
+                    You / {leaderboardMeta.myPlayerName || playerName || "PLAYER"}
+                  </p>
+                  <p className="text-sm font-black tracking-[-0.03em] text-[#F5F1E8]">
+                    {leaderboardMeta.myScore.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
             <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
               {leaderboardLoading ? (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm font-bold uppercase tracking-[0.2em] text-white/35">
@@ -1707,7 +1776,7 @@ export default function Page() {
                       key={`${row.player_name}-${row.score}-${row.created_at}-${index}`}
                       className={[
                         "grid grid-cols-[42px_1fr_auto] items-center gap-3 rounded-2xl border px-4 py-3",
-                        row.player_name === playerName
+                        row.player_name === playerName || row.rank === leaderboardMeta.myRank
                           ? "border-[#D6B36A]/35 bg-[#D6B36A]/[0.075]"
                           : index === 0
                             ? "border-[#D6B36A]/25 bg-[#D6B36A]/[0.055]"
@@ -1715,13 +1784,13 @@ export default function Page() {
                       ].join(" ")}
                     >
                       <p className="text-sm font-black text-[#D6B36A]">
-                        {index + 1}
+                        {row.rank}
                       </p>
                       <p className="truncate text-sm font-black uppercase tracking-[0.12em] text-white/70">
                         {row.player_name}
                       </p>
                       <p className="text-lg font-black tracking-[-0.04em] text-[#F5F1E8]">
-                        {row.score}
+                        {row.score.toLocaleString()}
                       </p>
                     </div>
                   ))}

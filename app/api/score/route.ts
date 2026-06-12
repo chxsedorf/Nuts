@@ -104,36 +104,19 @@ export async function POST(request: Request) {
       String(body.playerName ?? "PLAYER")
     );
 
-    const { data: currentBest, error: currentBestError } = await supabase
+    // Keep old score rows. Period rankings need scores inside Today / Month,
+    // even when the score is lower than the player's all-time best.
+    const { error: updateNameError } = await supabase
       .from("nuts_scores")
-      .select("id, score, player_name")
+      .update({ player_name: playerName })
       .eq("player_id", playerId)
-      .order("score", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .neq("player_name", playerName);
 
-    if (currentBestError) {
+    if (updateNameError) {
       return NextResponse.json(
-        { ok: false, error: currentBestError.message },
+        { ok: false, error: updateNameError.message },
         { status: 500 }
       );
-    }
-
-    if (currentBest && String(currentBest.player_name) !== playerName) {
-      await supabase
-        .from("nuts_scores")
-        .update({ player_name: playerName })
-        .eq("player_id", playerId);
-    }
-
-    if (currentBest && Number(currentBest.score) >= score) {
-      return NextResponse.json({
-        ok: true,
-        submitted: false,
-        reason: "not_high_score",
-        bestScore: Number(currentBest.score),
-        playerName,
-      });
     }
 
     const { error: insertError } = await supabase.from("nuts_scores").insert({
@@ -149,13 +132,28 @@ export async function POST(request: Request) {
       );
     }
 
-    await supabase
+    const { data: currentBest, error: currentBestError } = await supabase
       .from("nuts_scores")
-      .delete()
+      .select("score")
       .eq("player_id", playerId)
-      .lt("score", score);
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-    return NextResponse.json({ ok: true, submitted: true, bestScore: score, playerName });
+    if (currentBestError) {
+      return NextResponse.json(
+        { ok: false, error: currentBestError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      submitted: true,
+      bestScore: Number(currentBest?.score ?? score),
+      playerName,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     const status = message === "name_taken" ? 409 : 500;

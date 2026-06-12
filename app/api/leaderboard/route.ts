@@ -9,6 +9,8 @@ type SupabaseScoreRow = {
   created_at: string;
 };
 
+type RankedRow = SupabaseScoreRow & { rank: number };
+
 function createSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -43,12 +45,34 @@ function getJstPeriodStart(period: Period): string | null {
   return utcStart.toISOString();
 }
 
+function pickBestRowsByPlayer(rows: SupabaseScoreRow[]) {
+  const bestByPlayer = new Map<string, SupabaseScoreRow>();
+
+  for (const row of rows) {
+    const existing = bestByPlayer.get(row.player_id);
+    if (
+      !existing ||
+      row.score > existing.score ||
+      (row.score === existing.score &&
+        new Date(row.created_at).getTime() < new Date(existing.created_at).getTime())
+    ) {
+      bestByPlayer.set(row.player_id, row);
+    }
+  }
+
+  return Array.from(bestByPlayer.values()).sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const periodParam = searchParams.get("period") ?? searchParams.get("range");
     const period: Period =
       periodParam === "monthly" || periodParam === "all" ? periodParam : "daily";
+    const playerId = String(searchParams.get("playerId") ?? "").trim();
 
     const supabase = createSupabaseClient();
     let query = supabase
@@ -56,7 +80,7 @@ export async function GET(request: Request) {
       .select("player_id, player_name, score, created_at")
       .order("score", { ascending: false })
       .order("created_at", { ascending: true })
-      .limit(200);
+      .limit(5000);
 
     const start = getJstPeriodStart(period);
     if (start) {
@@ -69,28 +93,29 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    const bestByPlayer = new Map<string, SupabaseScoreRow>();
+    const rankedRows: RankedRow[] = pickBestRowsByPlayer(
+      ((data ?? []) as SupabaseScoreRow[])
+    ).map((row, index) => ({ ...row, rank: index + 1 }));
 
-    for (const row of (data ?? []) as SupabaseScoreRow[]) {
-      const existing = bestByPlayer.get(row.player_id);
-      if (!existing || row.score > existing.score) {
-        bestByPlayer.set(row.player_id, row);
-      }
-    }
+    const myRow = playerId
+      ? rankedRows.find((row) => row.player_id === playerId) ?? null
+      : null;
 
-    const rows = Array.from(bestByPlayer.values())
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      })
-      .slice(0, 20)
-      .map(({ player_name, score, created_at }) => ({
-        player_name,
-        score,
-        created_at,
-      }));
+    const rows = rankedRows.slice(0, 20).map(({ rank, player_name, score, created_at }) => ({
+      rank,
+      player_name,
+      score,
+      created_at,
+    }));
 
-    return NextResponse.json({ ok: true, rows });
+    return NextResponse.json({
+      ok: true,
+      rows,
+      totalPlayers: rankedRows.length,
+      myRank: myRow?.rank ?? null,
+      myScore: myRow?.score ?? null,
+      myPlayerName: myRow?.player_name ?? null,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
