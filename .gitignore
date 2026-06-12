@@ -42,3 +42,11 @@ next-env.d.ts
 
 .vercel
 .env*
+
+android.keystore
+*.keystore
+*.jks
+.gradle/
+app/build/
+build/
+hs_err_pid*.log
